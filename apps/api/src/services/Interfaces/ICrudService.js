@@ -1,7 +1,4 @@
-/**
- * ICrudService - Interface para servicios CRUD completos
- * ISP: Solo se implementa si se necesita el CRUD completo
- */
+
 class ICrudService extends IBaseService {
   constructor(query) {
     super();
@@ -9,9 +6,7 @@ class ICrudService extends IBaseService {
     this.table = null;
   }
 
-  /**
-   * OCP: Abierto para extender con nuevos filtros
-   */
+
   obtenerTodos(filtros = {}) {
     return this.query.getAll(this.table, filtros);
   }

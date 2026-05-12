@@ -1,8 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * CategoriaService - SRP: Única responsabilidad de gestión de categorías
- */
 class CategoriaService {
   async obtenerTodas() {
     try {

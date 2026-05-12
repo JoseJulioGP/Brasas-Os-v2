@@ -1,8 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * UsuarioService - SRP: Única responsabilidad de gestión de usuarios
- */
 class UsuarioService {
   async obtenerTodos() {
     try {

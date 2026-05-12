@@ -1,8 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * DetallePedidoService - SRP: Única responsabilidad de detalles de pedidos
- */
 class DetallePedidoService {
   async obtenerPorId(id) {
     try {
