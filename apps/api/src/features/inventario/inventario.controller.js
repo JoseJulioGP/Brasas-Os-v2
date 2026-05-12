@@ -1,5 +1,12 @@
 const inventarioService = require('./inventario.service');
 
+<<<<<<< Updated upstream
+=======
+// SRP: El controlador solo maneja HTTP, extrae datos y valida
+
+// === CARNES ===
+
+>>>>>>> Stashed changes
 const getCarnes = async (req, res) => {
   try {
     const carnes = await inventarioService.getCarnes();
@@ -15,7 +22,11 @@ const getCarnesDisponibles = async (req, res) => {
     const carnes = await inventarioService.getCarnesDisponibles();
     res.status(200).json(carnes);
   } catch (error) {
+<<<<<<< Updated upstream
     console.error('Error getting carnes:', error);
+=======
+    console.error('Error getting carnes disponibles:', error);
+>>>>>>> Stashed changes
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
@@ -47,7 +58,16 @@ const updateCarne = async (req, res) => {
   const { corte, kg_disponibles, precio_por_kg, proveedor } = req.body;
 
   try {
+<<<<<<< Updated upstream
     const carne = await inventarioService.updateCarne(id, { corte, kg_disponibles, precio_por_kg, proveedor });
+=======
+    const carne = await inventarioService.updateCarne(id, { 
+      corte, 
+      kg_disponibles, 
+      precio_por_kg, 
+      proveedor 
+    });
+>>>>>>> Stashed changes
     if (!carne) {
       return res.status(404).json({ message: 'Carne no encontrada' });
     }
@@ -58,6 +78,11 @@ const updateCarne = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
+=======
+// === INSUMOS ===
+
+>>>>>>> Stashed changes
 const getInsumos = async (req, res) => {
   try {
     const insumos = await inventarioService.getInsumos();
@@ -96,7 +121,16 @@ const updateInsumo = async (req, res) => {
 
   try {
     const insumo = await inventarioService.updateInsumo(id, {
+<<<<<<< Updated upstream
       nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo
+=======
+      nombre,
+      categoria,
+      unidad_medida,
+      stock_actual,
+      stock_minimo,
+      activo
+>>>>>>> Stashed changes
     });
     if (!insumo) {
       return res.status(404).json({ message: 'Insumo no encontrado' });
@@ -108,10 +142,24 @@ const updateInsumo = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
 const getMovimientos = async (req, res) => {
   const { insumo_id, tipo, fecha_inicio, fecha_fin } = req.query;
   try {
     const movimientos = await inventarioService.getMovimientos({ insumo_id, tipo, fecha_inicio, fecha_fin });
+=======
+// === MOVIMIENTOS ===
+
+const getMovimientos = async (req, res) => {
+  const { insumo_id, tipo, fecha_inicio, fecha_fin } = req.query;
+  try {
+    const movimientos = await inventarioService.getMovimientos({ 
+      insumo_id, 
+      tipo, 
+      fecha_inicio, 
+      fecha_fin 
+    });
+>>>>>>> Stashed changes
     res.status(200).json(movimientos);
   } catch (error) {
     console.error('Error getting movimientos:', error);
@@ -126,6 +174,20 @@ const createMovimiento = async (req, res) => {
     return res.status(400).json({ message: 'Insumo, tipo y cantidad son requeridos' });
   }
 
+<<<<<<< Updated upstream
+=======
+  // Validar que no resulte en stock negativo (RNF-05)
+  if (tipo === 'SALIDA') {
+    const insumo = await inventarioService.getInsumoById(insumo_id);
+    if (insumo && insumo.stock_actual < cantidad) {
+      return res.status(400).json({ 
+        message: 'No hay suficiente stock para realizar esta salida',
+        stock_actual: insumo.stock_actual
+      });
+    }
+  }
+
+>>>>>>> Stashed changes
   try {
     const movimiento = await inventarioService.createMovimiento({
       insumo_id,

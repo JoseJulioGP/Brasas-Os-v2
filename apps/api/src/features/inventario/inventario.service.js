@@ -1,28 +1,51 @@
 const db = require('../../shared/database/db');
 
+<<<<<<< Updated upstream
 class InventarioService {
   // === CARNES ===
   async getCarnes() {
     const sql = `SELECT id, corte, kg_comprados, kg_disponibles, precio_por_kg, proveedor, fecha_compra
                  FROM carnes 
                  ORDER BY fecha_compra DESC`;
+=======
+// SRP: Solo maneja la lógica de negocio relacionada con inventario
+
+class InventarioService {
+  // === CARNES ===
+
+  async getCarnes() {
+    const sql = `SELECT id, corte, kg_comprados, kg_disponibles, precio_por_kg, proveedor, fecha_compra
+                FROM carnes 
+                ORDER BY fecha_compra DESC`;
+>>>>>>> Stashed changes
     const result = await db.query(sql);
     return result.rows;
   }
 
   async getCarnesDisponibles() {
     const sql = `SELECT id, corte, kg_disponibles, precio_por_kg
+<<<<<<< Updated upstream
                  FROM carnes 
                  WHERE kg_disponibles > 0
                  ORDER BY corte`;
+=======
+                FROM carnes 
+                WHERE kg_disponibles > 0
+                ORDER BY corte`;
+>>>>>>> Stashed changes
     const result = await db.query(sql);
     return result.rows;
   }
 
   async createCarne(data) {
     const sql = `INSERT INTO carnes (corte, kg_comprados, kg_disponibles, precio_por_kg, proveedor, fecha_compra)
+<<<<<<< Updated upstream
                  VALUES ($1, $2, $3, $4, $5, NOW())
                  RETURNING *`;
+=======
+                VALUES ($1, $2, $3, $4, $5, NOW())
+                RETURNING *`;
+>>>>>>> Stashed changes
     const result = await db.query(sql, [
       data.corte,
       data.kg_comprados,
@@ -66,19 +89,43 @@ class InventarioService {
   }
 
   // === INSUMOS ===
+<<<<<<< Updated upstream
   async getInsumos() {
     const sql = `SELECT id, nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo, created_at
                  FROM insumos 
                  WHERE activo = true
                  ORDER BY nombre`;
+=======
+
+  async getInsumos() {
+    const sql = `SELECT id, nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo, created_at
+                FROM insumos 
+                WHERE activo = true
+                ORDER BY nombre`;
+>>>>>>> Stashed changes
     const result = await db.query(sql);
     return result.rows;
   }
 
+<<<<<<< Updated upstream
   async createInsumo(data) {
     const sql = `INSERT INTO insumos (nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo, created_at)
                  VALUES ($1, $2, $3, $4, $5, true, NOW())
                  RETURNING *`;
+=======
+  async getInsumoById(id) {
+    const sql = `SELECT id, nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo, created_at
+                FROM insumos 
+                WHERE id = $1`;
+    const result = await db.query(sql, [id]);
+    return result.rows[0];
+  }
+
+  async createInsumo(data) {
+    const sql = `INSERT INTO insumos (nombre, categoria, unidad_medida, stock_actual, stock_minimo, activo, created_at)
+                VALUES ($1, $2, $3, $4, $5, true, NOW())
+                RETURNING *`;
+>>>>>>> Stashed changes
     const result = await db.query(sql, [
       data.nombre,
       data.categoria || null,
@@ -130,11 +177,20 @@ class InventarioService {
   }
 
   // === MOVIMIENTOS ===
+<<<<<<< Updated upstream
   async getMovimientos(filtros) {
     let sql = `SELECT sm.*, i.nombre as insumo_nombre
                FROM stock_movimientos sm
                LEFT JOIN insumos i ON sm.insumo_id = i.id
                WHERE 1=1`;
+=======
+
+  async getMovimientos(filtros) {
+    let sql = `SELECT sm.*, i.nombre as insumo_nombre
+              FROM stock_movimientos sm
+              LEFT JOIN insumos i ON sm.insumo_id = i.id
+              WHERE 1=1`;
+>>>>>>> Stashed changes
     const values = [];
     let paramIndex = 1;
 
@@ -161,9 +217,23 @@ class InventarioService {
   }
 
   async createMovimiento(data) {
+<<<<<<< Updated upstream
     const sql = `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, costo_unitario, motivo, fecha)
                  VALUES ($1, $2, $3, $4, $5, $6, NOW())
                  RETURNING *`;
+=======
+    // RNF-05: No permitir stock negativo
+    if (data.tipo === 'SALIDA') {
+      const insumo = await this.getInsumoById(data.insumo_id);
+      if (insumo && insumo.stock_actual < data.cantidad) {
+        throw new Error('STOCK_NEGATIVO');
+      }
+    }
+
+    const sql = `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, costo_unitario, motivo, fecha)
+                VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                RETURNING *`;
+>>>>>>> Stashed changes
     const result = await db.query(sql, [
       data.insumo_id,
       data.usuario_id,
@@ -172,6 +242,17 @@ class InventarioService {
       data.costo_unitario || null,
       data.motivo || null
     ]);
+<<<<<<< Updated upstream
+=======
+
+    // Actualizar stock del insumo
+    const signo = data.tipo === 'ENTRADA' ? 1 : -1;
+    await db.query(
+      'UPDATE insumos SET stock_actual = stock_actual + ($1 * $2) WHERE id = $3',
+      [data.cantidad, signo, data.insumo_id]
+    );
+
+>>>>>>> Stashed changes
     return result.rows[0];
   }
 }
