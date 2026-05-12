@@ -16,11 +16,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // Rutas del API - Screaming Architecture
 app.use('/api/v1/auth', require('./features/auth/routes'));
-app.use('/api/v1/usuarios', require('./features/users/routes'));
+app.use('/api/v1/usuarios', require('./features/users/users.routes'));
 app.use('/api/v1/productos', require('./features/productos/productos.routes'));
 app.use('/api/v1/inventario', require('./features/inventario/inventario.routes'));
 app.use('/api/v1/pedidos', require('./features/pedidos/pedidos.routes'));
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor de Brasas-OS corriendo en el puerto ${PORT}`);
-});
+
+module.exports = app;
