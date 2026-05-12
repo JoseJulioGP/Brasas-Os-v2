@@ -4,6 +4,11 @@ import { Input, Button, Form, Checkbox } from "@heroui/react";
 import { FaEnvelope, FaGoogle, FaArrowRight } from "react-icons/fa";
 import { useAuthStore } from "../stores/useAuthStore";
 import { getRedirectPath } from "../../../utils/authUtils";
+import { AuthBackground } from "./AuthBackground";
+import { AuthBrandSection } from "./AuthBrandSection";
+import { AuthCardHeader } from "./AuthCardHeader";
+import { AuthErrorAlert } from "./AuthErrorAlert";
+import { PasswordInput } from "./PasswordInput";
 
 export const LoginPage = () => {
   const navigate = useNavigate();

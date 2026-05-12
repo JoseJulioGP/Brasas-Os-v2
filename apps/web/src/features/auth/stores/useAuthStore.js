@@ -14,8 +14,8 @@ export const useAuthStore = create((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       return user;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Error al iniciar sesión';
-      set({ error: errorMessage, isLoading: false });
+      const msg = error.response?.data?.message || error.message;
+      set({ error: msg, isLoading: false });
       throw error;
     }
   },
@@ -27,8 +27,8 @@ export const useAuthStore = create((set) => ({
       set({ user, isAuthenticated: true, isLoading: false });
       return user;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || error.message || 'Error al registrar usuario';
-      set({ error: errorMessage, isLoading: false });
+      const msg = error.response?.data?.message || error.message;
+      set({ error: msg, isLoading: false });
       throw error;
     }
   },

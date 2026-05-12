@@ -1,18 +1,10 @@
-import api from '../../../config/api';
+import api from "../../../services/api";
 
 export const fetchDashboardData = async (periodo) => {
-  // Por ahora, obtienedatos básicos del backend
-  // En Sprint 6-10 se implementarán los reportes completos
-  try {
-    const response = await api.get('/reportes/dashboard', {
-      params: { periodo }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    throw error;
-  }
+  const { data } = await api.get(`/dashboard?periodo=${periodo}`);
+  return data;
 };
+<<<<<<< HEAD
 
 export const fetchStats = async (periodo) => {
   try {
@@ -86,3 +78,5 @@ export const mockFinancial = {
   semana: { ingresos: 0, costos: 0, ganancia: 0, margen: 0 },
   mes: { ingresos: 0, costos: 0, ganancia: 0, margen: 0 }
 };
+=======
+>>>>>>> feature/frontend
