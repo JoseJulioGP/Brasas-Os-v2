@@ -1,8 +1,6 @@
 const db = require('../shared/database');
 
-/**
- * CarnesService - SRP: Única responsabilidad de gestión de carnes
- */
+
 class CarnesService {
   async obtenerTodas() {
     try {

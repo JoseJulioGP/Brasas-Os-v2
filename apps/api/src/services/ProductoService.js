@@ -1,8 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * ProductoService - SRP: Única responsabilidad de gestión de productos
- */
 class ProductoService {
   async obtenerTodos() {
     try {
