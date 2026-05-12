@@ -20,8 +20,9 @@ export const LoginPage = () => {
     e.preventDefault();
     clearError();
     try {
-      await login(email, password);
-      navigate("/");
+      const user = await login(email, password);
+      const redirectPath = getRedirectPath(user.rol);
+      navigate(redirectPath);
     } catch {}
   };
 

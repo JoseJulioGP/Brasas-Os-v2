@@ -34,8 +34,9 @@ export const RegisterPage = () => {
     }
 
     try {
-      await register(nombre, email, password);
-      navigate("/");
+      const user = await register(nombre, email, password);
+      const redirectPath = getRedirectPath(user.rol);
+      navigate(redirectPath);
     } catch {}
   };
 
