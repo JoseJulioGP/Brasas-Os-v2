@@ -1,8 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * PedidoService - SRP: Única responsabilidad de gestión de pedidos
- */
 class PedidoService {
   async obtenerTodos() {
     try {

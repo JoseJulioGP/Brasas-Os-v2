@@ -1,9 +1,5 @@
 const db = require('../shared/database');
 
-/**
- * AutenticacionService - SRP: Única responsabilidad de autenticación
- * ISP: No implementa métodos CRUD genéricos
- */
 class AutenticacionService {
   async iniciarSesion(email, password) {
     try {

@@ -1,7 +1,4 @@
-/**
- * Implementación base de IBaseService
- * OCP: Puede extenderse sin modificar este archivo
- */
+
 class BaseServiceImpl {
   constructor(query, tableName) {
     this.query = query;
