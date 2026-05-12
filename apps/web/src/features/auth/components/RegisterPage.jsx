@@ -19,6 +19,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { useAuthStore } from "../stores/useAuthStore";
+import { getRedirectPath } from "../../../utils/authUtils";
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -42,8 +43,9 @@ export const RegisterPage = () => {
     }
 
     try {
-      await register(nombre, email, password);
-      navigate("/");
+      const user = await register(nombre, email, password);
+      const redirectPath = getRedirectPath(user.rol);
+      navigate(redirectPath);
     } catch {}
   };
 

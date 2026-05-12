@@ -1,69 +1,48 @@
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const mockUsers = [
-  {
-    id: "1",
-    rol_id: "1",
-    nombre: "Admin",
-    email: "admin@brasas.com",
-    password_hash: "admin123",
-    activo: true,
-    ultimo_acceso: null,
-    created_at: "2024-01-01T00:00:00Z",
-  },
-  {
-    id: "2",
-    rol_id: "2",
-    nombre: "Empleado",
-    email: "empleado@brasas.com",
-    password_hash: "empleado123",
-    activo: true,
-    ultimo_acceso: null,
-    created_at: "2024-01-02T00:00:00Z",
-  },
-];
+import api from '../../../config/api';
 
 export const authService = {
   async login(email, password) {
-    await delay(800);
-    const user = mockUsers.find(
-      (u) => u.email === email && u.password_hash === password
-    );
-    if (!user) {
-      throw new Error("Credenciales inválidas");
-    }
-    if (!user.activo) {
-      throw new Error("Usuario inactivo");
-    }
-    const { password_hash, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    const { data } = await api.post('/auth/login', { email, password });
+    
+    // Guardar usuario y token en localStorage
+    localStorage.setItem('brasas_user', JSON.stringify(data.user));
+    localStorage.setItem('brasas_token', data.token);
+    
+    return data.user;
   },
 
   async register(nombre, email, password) {
-    await delay(800);
-    const exists = mockUsers.find((u) => u.email === email);
-    if (exists) {
-      throw new Error("El correo ya está registrado");
-    }
-    const newUser = {
-      id: crypto.randomUUID(),
-      rol_id: "2",
-      nombre,
-      email,
-      password_hash: password,
-      activo: true,
-      ultimo_acceso: null,
-      created_at: new Date().toISOString(),
-    };
-    mockUsers.push(newUser);
-    const { password_hash, ...userWithoutPassword } = newUser;
-    return userWithoutPassword;
+    const { data } = await api.post('/auth/register', { nombre, email, password });
+    
+    // Guardar usuario y token en localStorage
+    localStorage.setItem('brasas_user', JSON.stringify(data.user));
+    localStorage.setItem('brasas_token', data.token);
+    
+    return data.user;
   },
 
   async getCurrentUser() {
-    await delay(300);
-    const stored = localStorage.getItem("brasas_user");
+    const stored = localStorage.getItem('brasas_user');
     if (!stored) return null;
-    return JSON.parse(stored);
+    
+    const user = JSON.parse(stored);
+    const token = localStorage.getItem('brasas_token');
+    
+    if (!token) return null;
+    
+    return user;
   },
+
+  logout() {
+    localStorage.removeItem('brasas_user');
+    localStorage.removeItem('brasas_token');
+  },
+
+  getToken() {
+    return localStorage.getItem('brasas_token');
+  },
+
+  isAuthenticated() {
+    return !!localStorage.getItem('brasas_token');
+  }
 };
