@@ -20,6 +20,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { useAuthStore } from "../stores/useAuthStore";
+import { getRedirectPath } from "../../../utils/authUtils";
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -35,8 +36,9 @@ export const LoginPage = () => {
     e.preventDefault();
     clearError();
     try {
-      await login(email, password);
-      navigate("/");
+      const user = await login(email, password);
+      const redirectPath = getRedirectPath(user.rol);
+      navigate(redirectPath);
     } catch {}
   };
 
