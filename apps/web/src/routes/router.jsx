@@ -4,6 +4,8 @@ import { LoginPage } from "../features/auth/components/LoginPage";
 import { RegisterPage } from "../features/auth/components/RegisterPage";
 import DashboardPage from "../features/dashboard/components/DashboardPage";
 import { InventoryPage } from "../features/inventory/components/InventoryPage";
+import { UsersPage } from "../features/users/components/UsersPage";
+import { OrdersPage } from "../features/orders/components/OrdersPage";
 import { DashboardLayout } from "../components/DashboardLayout";
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -77,7 +79,7 @@ export const router = createBrowserRouter([
     path: "/admin/usuarios",
     element: (
       <ProtectedRoute allowedRoles={['ADMIN']}>
-        <DashboardPage />
+        <UsersPage />
       </ProtectedRoute>
     ),
   },
@@ -86,7 +88,7 @@ export const router = createBrowserRouter([
     path: "/empleado/pedidos",
     element: (
       <ProtectedRoute allowedRoles={['EMPLEADO']}>
-        <DashboardPage />
+        <OrdersPage />
       </ProtectedRoute>
     ),
   },
