@@ -20,5 +20,4 @@ app.use('/api/v1/usuarios', require('./features/users/users.routes'));
 app.use('/api/v1/productos', require('./features/productos/productos.routes'));
 app.use('/api/v1/inventario', require('./features/inventario/inventario.routes'));
 app.use('/api/v1/pedidos', require('./features/pedidos/pedidos.routes'));
-
 module.exports = app;
