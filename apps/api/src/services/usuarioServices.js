@@ -1,131 +1,112 @@
-import { query } from '../config/db.js';
-import { ValidationError } from '../utils/errors.js';
+const db = require('../shared/database');
 
-export class UsuarioService {
-  /**
-   * Obtener todos los usuarios
-   * @param {Object} filters - { activo, rol_id, busqueda }
-   * @returns {Array} - Lista de usuarios
-   */
-  async findAll(filters = {}) {
-    let queryText = `
-      SELECT * FROM usuarios
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (filters.activo !== undefined) {
-      queryText += ` AND activo = $${params.length + 1}`;
-      params.push(filters.activo);
+/**
+ * UsuarioService - SRP: Única responsabilidad de gestión de usuarios
+ */
+class UsuarioService {
+  async obtenerTodos() {
+    try {
+      const sql = `SELECT u.*, r.nombre as rol_nombre,
+                          c.nombre as categoria_nombre
+                   FROM usuarios u
+                   LEFT JOIN roles r ON u.rol_id = r.id
+                   LEFT JOIN categorias c ON u.categoria_id = c.id
+                   WHERE u.activo = true
+                   ORDER BY u.nombre`;
+      const result = await db.query(sql);
+      return result.rows;
+    } catch (error) {
+      console.error("Error obteniendo usuarios:", error);
     }
-
-    if (filters.rol_id !== undefined) {
-      queryText += ` AND rol_id = $${params.length + 1}`;
-      params.push(filters.rol_id);
-    }
-
-    if (filters.busqueda) {
-      queryText += ` AND (nombre ILIKE $${params.length + 1} OR email ILIKE $${params.length + 1})`;
-      params.push(`%${filters.busqueda}%`);
-    }
-
-    queryText += ' ORDER BY nombre';
-
-    const result = await query(queryText, params);
-    return result.rows;
   }
 
-  /**
-   * Obtener un usuario por ID
-   * @param {number} id - ID del usuario
-   * @returns {Object} - Usuario
-   */
-  async findById(id) {
-    const result = await query(
-      "SELECT * FROM usuarios WHERE id = $1",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Usuario no encontrado', 404);
+  async obtenerPorEmail(email) {
+    try {
+      const sql = `SELECT * FROM usuarios WHERE email = $1 AND activo = true`;
+      const result = await db.query(sql, [email]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error obteniendo usuario por email:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Crear nuevo usuario
-   * @param {Object} userData - { nombre, email, password, rol_id }
-   * @returns {Object} - Usuario creado
-   */
-  async create(userData) {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
-    const result = await query(
-      `INSERT INTO usuarios (
-        nombre, email, password_hash, rol_id, activo
-      ) VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, nombre, email, activo, rol_id`,
-      [
-        userData.nombre,
-        userData.email,
-        hashedPassword,
-        userData.rol_id || 1,
-        userData.activo !== false
-      ]
-    );
-
-    return result.rows[0];
+  async obtenerPorId(id) {
+    try {
+      const sql = `SELECT * FROM usuarios WHERE id = $1 AND activo = true`;
+      const result = await db.query(sql, [id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error obteniendo usuario:", error);
+    }
   }
 
-  /**
-   * Actualizar usuario
-   * @param {number} id - ID del usuario
-   * @param {Object} userData - Datos para actualizar
-   * @returns {Object} - Usuario actualizado
-   */
-  async update(id, userData) {
-    const { password, ...updateData } = userData;
-
-    // Si se proporcionó una nueva contraseña, encriptarla
-    if (password) {
-      const saltRounds = 10;
-      updateData.password_hash = await bcrypt.hash(password, saltRounds);
-      delete userData.password;
+  async crearUsuario(data) {
+    try {
+      const sql = `INSERT INTO usuarios (nombre, email, password_hash, rol_id, categoria_id, activo) 
+                    VALUES ($1, $2, $3, $4, $5, true) RETURNING *`;
+      const result = await db.query(sql, [
+        data.nombre, 
+        data.email, 
+        data.password_hash, 
+        data.rol_id, 
+        data.categoria_id || null
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error creando usuario:", error);
     }
+  }
 
-    const result = await query(
-      `UPDATE usuarios
-      SET nombre = $1, email = $2, activo = $3
-      WHERE id = $4
-      RETURNING id, nombre, email, activo, rol_id`,
-      [
-        updateData.nombre,
-        updateData.email,
-        updateData.activo,
+  async actualizarUsuario(id, data) {
+    try {
+      const sql = `UPDATE usuarios 
+                    SET nombre = COALESCE($1, nombre),
+                        email = COALESCE($2, email),
+                        activo = COALESCE($3, activo),
+                        rol_id = COALESCE($4, rol_id)
+                    WHERE id = $5 AND activo = true RETURNING *`;
+      const result = await db.query(sql, [
+        data.nombre, 
+        data.email, 
+        data.activo, 
+        data.rol_id, 
         id
-      ]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Usuario no encontrado', 404);
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error actualizando usuario:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Eliminar usuario (soft delete)
-   * @param {number} id - ID del usuario
-   * @returns {boolean} - Estado de la operación
-   */
-  async delete(id) {
-    const result = await query(
-      "UPDATE usuarios SET activo = false WHERE id = $1",
-      [id]
-    );
+  async eliminarUsuario(id) {
+    try {
+      const sql = `UPDATE usuarios SET activo = false WHERE id = $1`;
+      const result = await db.query(sql, [id]);
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error eliminando usuario:", error);
+    }
+  }
 
-    return result.rowCount > 0;
+  async obtenerActivos() {
+    try {
+      const sql = `SELECT * FROM usuarios WHERE activo = true`;
+      const result = await db.query(sql);
+      return result.rows;
+    } catch (error) {
+      console.error("Error obteniendo usuarios activos:", error);
+    }
+  }
+
+  async validarEmail(email) {
+    try {
+      const sql = `SELECT COUNT(*) as total FROM usuarios WHERE email = $1`;
+      const result = await db.query(sql, [email]);
+      return result.rows[0].total > 0;
+    } catch (error) {
+      console.error("Error validando email:", error);
+    }
   }
 }
+
+module.exports = new UsuarioService();
