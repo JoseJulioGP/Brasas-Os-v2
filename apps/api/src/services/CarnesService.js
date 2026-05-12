@@ -1,142 +1,92 @@
-import { query } from '../config/db.js';
-import { ValidationError } from '../utils/errors.js';
+const db = require('../shared/database');
 
-export class CarnesService {
-  /**
-   * Obtener todos los cortes de carne
-   * @param {Object} filters - { busqueda }
-   * @returns {Array} - Lista de carnes
-   */
-  async findAll(filters = {}) {
-    let queryText = `
-      SELECT * FROM carnes
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (filters.busqueda) {
-      queryText += ` AND nombre_corte ILIKE $${params.length + 1}`;
-      params.push(`%${filters.busqueda}%`);
+/**
+ * CarnesService - SRP: Única responsabilidad de gestión de carnes
+ */
+class CarnesService {
+  async obtenerTodas() {
+    try {
+      const sql = `SELECT c.*, 
+                         (SELECT COUNT(*) FROM inventario_carnes 
+                          WHERE carne_id = c.id) as total_inventario
+                   FROM carnes c
+                   WHERE c.activo = true`;
+      const result = await db.query(sql);
+      return result.rows;
+    } catch (error) {
+      console.error("Error obteniendo carnes:", error);
     }
-
-    queryText += ' ORDER BY nombre_corte';
-
-    const result = await query(queryText, params);
-    return result.rows;
   }
 
-  /**
-   * Obtener carne por ID
-   * @param {number} id - ID de la carne
-   * @returns {Object} - Carne
-   */
-  async findById(id) {
-    const result = await query(
-      "SELECT * FROM carnes WHERE id = $1",
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Corte de carne no encontrado', 404);
+  async obtenerPorId(id) {
+    try {
+      const sql = `SELECT * FROM carnes WHERE id = $1 AND activo = true`;
+      const result = await db.query(sql, [id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error obteniendo carne:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Crear nuevo corte de carne
-   * @param {Object} carneData - { nombre_corte, precio_kg }
-   * @returns {Object} - Carne creada
-   */
-  async create(carneData) {
-    const result = await query(
-      `INSERT INTO carnes (nombre_corte, precio_kg)
-      VALUES ($1, $2)
-      RETURNING id, nombre_corte, precio_kg`,
-      [carneData.nombre_corte, carneData.precio_kg]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Error al crear el corte de carne', 500);
+  async crearCarne(data) {
+    try {
+      const sql = `INSERT INTO carnes (nombre_corte, descripcion, precio_kg, activo) 
+                    VALUES ($1, $2, $3, true) RETURNING *`;
+      const result = await db.query(sql, [data.nombre_corte, data.descripcion, data.precio_kg]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error creando carne:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Actualizar carne
-   * @param {number} id - ID de la carne
-   * @param {Object} carneData - Datos para actualizar
-   * @returns {Object} - Carne actualizada
-   */
-  async update(id, carneData) {
-    const fields = [];
-    const params = [];
-    let paramIndex = 1;
-
-    if (carneData.nombre_corte !== undefined) {
-      fields.push(`nombre_corte = $${paramIndex}`);
-      params.push(carneData.nombre_corte);
+  async actualizarCarne(id, data) {
+    try {
+      const sql = `UPDATE carnes 
+                    SET nombre_corte = COALESCE($1, nombre_corte),
+                        descripcion = COALESCE($2, descripcion),
+                        precio_kg = COALESCE($3, precio_kg),
+                        activo = COALESCE($4, activo)
+                    WHERE id = $5 AND activo = true RETURNING *`;
+      const result = await db.query(sql, [data.nombre_corte, data.descripcion, data.precio_kg, data.activo, id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error actualizando carne:", error);
     }
-
-    if (carneData.precio_kg !== undefined) {
-      fields.push(`precio_kg = $${paramIndex}`);
-      params.push(carneData.precio_kg);
-    }
-
-    if (fields.length === 0) {
-      throw new ValidationError('No se proporcionaron campos para actualizar', 400);
-    }
-
-    fields.push(`WHERE id = $${paramIndex}`);
-    params.push(id);
-
-    const queryText = `UPDATE carnes SET ${fields.join(', ')} RETURNING *`;
-
-    const result = await query(queryText, params);
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Corte de carne no encontrado', 404);
-    }
-
-    return result.rows[0];
   }
 
-  /**
-   * Eliminar carne (soft delete)
-   * @param {number} id - ID de la carne
-   * @returns {boolean} - Estado de la operación
-   */
-  async delete(id) {
-    const result = await query(
-      "UPDATE carnes SET nombre_corte = '' WHERE id = $1",
-      [id]
-    );
-
-    return result.rowCount > 0;
+  async eliminarCarne(id) {
+    try {
+      const sql = `UPDATE carnes SET activo = false WHERE id = $1`;
+      const result = await db.query(sql, [id]);
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error eliminando carne:", error);
+    }
   }
 
-  /**
-   * Obtener corte de carne con su inventario disponible
-   * @param {number} carneId - ID de la carne
-   * @returns {Object} - Carne con inventario
-   */
-  async getWithInventory(carneId) {
-    const result = await query(
-      `SELECT 
-        c.*,
-        i.kg_disponibles,
-        i.kg_usados
-      FROM carnes c
-      LEFT JOIN inventario_carnes i ON c.id = i.carne_id
-      WHERE c.id = $1`,
-      [carneId]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Corte de carne no encontrado', 404);
+  async obtenerInventarioCarnes(carneId) {
+    try {
+      const sql = `SELECT * FROM inventario_carnes WHERE carne_id = $1`;
+      const result = await db.query(sql, [carneId]);
+      return result.rows;
+    } catch (error) {
+      console.error("Error obteniendo inventario:", error);
     }
+  }
 
-    return result.rows[0];
+  async actualizarInventarioCarne(id, data) {
+    try {
+      const sql = `UPDATE inventario_carnes 
+                    SET kg_disponibles = COALESCE($1, kg_disponibles),
+                        kg_usados = COALESCE($2, kg_usados),
+                        fecha_modificacion = CURRENT_TIMESTAMP
+                    WHERE id = $3 RETURNING *`;
+      const result = await db.query(sql, [data.kg_disponibles, data.kg_usados, id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error actualizando inventario:", error);
+    }
   }
 }
+
+module.exports = new CarnesService();

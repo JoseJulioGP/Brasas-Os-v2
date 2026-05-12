@@ -1,174 +1,75 @@
-import { query } from '../config/db.js';
-import { ValidationError } from '../utils/errors.js';
+const db = require('../shared/database');
 
-export class DetallePedidoService {
-  /**
-   * Obtener todos los detalles de pedidos
-   * @param {Object} filters - { pedido_id }
-   * @returns {Array} - Lista de detalles
-   */
-  async findAll(filters = {}) {
-    let queryText = `
-      SELECT 
-        dp.*,
-        p.nombre as producto_nombre,
-        car.nombre_corte as carne_nombre
-      FROM detalle_pedido dp
-      LEFT JOIN productos p ON dp.producto_id = p.id
-      LEFT JOIN carnes car ON dp.carne_id = car.id
-      WHERE 1=1
-    `;
-    const params = [];
-
-    if (filters.pedido_id !== undefined) {
-      queryText += ` AND dp.pedido_id = $${params.length + 1}`;
-      params.push(filters.pedido_id);
+/**
+ * DetallePedidoService - SRP: Única responsabilidad de detalles de pedidos
+ */
+class DetallePedidoService {
+  async obtenerPorId(id) {
+    try {
+      const sql = `SELECT dp.*, p.producto_id, p.nombre as nombre_producto, 
+                          p.precio_venta, dp.cantidad, dp.subtotal
+                    FROM detalle_pedido dp
+                    JOIN productos p ON dp.producto_id = p.id
+                    WHERE dp.id = $1`;
+      const result = await db.query(sql, [id]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error obteniendo detalle:", error);
     }
-
-    queryText += ' ORDER BY dp.pedido_id, dp.id';
-
-    const result = await query(queryText, params);
-    return result.rows;
   }
 
-  /**
-   * Obtener detalle por ID
-   * @param {number} id - ID del detalle
-   * @returns {Object} - Detalle del pedido
-   */
-  async findById(id) {
-    const result = await query(
-      `SELECT 
-        dp.*,
-        p.nombre as producto_nombre,
-        car.nombre_corte as carne_nombre
-      FROM detalle_pedido dp
-      LEFT JOIN productos p ON dp.producto_id = p.id
-      LEFT JOIN carnes car ON dp.carne_id = car.id
-      WHERE dp.id = $1`,
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Detalle de pedido no encontrado', 404);
+  async obtenerTodosPorPedido(pedidoId) {
+    try {
+      const sql = `SELECT dp.*, p.producto_id, p.nombre as nombre_producto,
+                          p.precio_venta, dp.cantidad, dp.subtotal
+                    FROM detalle_pedido dp
+                    JOIN productos p ON dp.producto_id = p.id
+                    WHERE dp.pedido_id = $1
+                    ORDER BY dp.cantidad DESC`;
+      const result = await db.query(sql, [pedidoId]);
+      return result.rows;
+    } catch (error) {
+      console.error("Error obteniendo detalles del pedido:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Crear nuevo detalle de pedido
-   * @param {Object} detalleData - Datos del detalle
-   * @returns {Object} - Detalle creado
-   */
-  async create(detalleData) {
-    const result = await query(
-      `INSERT INTO detalle_pedido (
-        pedido_id, producto_id, carne_id, cantidad, kg_carne, subtotal
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
-      [
-        detalleData.pedido_id,
-        detalleData.producto_id,
-        detalleData.carne_id,
-        detalleData.cantidad,
-        detalleData.kg_carne,
-        detalleData.subtotal
-      ]
-    );
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Error al crear el detalle', 500);
+  async crearDetallePedido(data) {
+    try {
+      const sql = `INSERT INTO detalle_pedido (pedido_id, producto_id, cantidad, subtotal) 
+                    VALUES ($1, $2, $3, $4) RETURNING *`;
+      const result = await db.query(sql, [
+        data.pedido_id, 
+        data.producto_id, 
+        data.cantidad, 
+        data.subtotal
+      ]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error creando detalle de pedido:", error);
     }
-
-    return result.rows[0];
   }
 
-  /**
-   * Actualizar detalle de pedido
-   * @param {number} id - ID del detalle
-   * @param {Object} detalleData - Datos para actualizar
-   * @returns {Object} - Detalle actualizado
-   */
-  async update(id, detalleData) {
-    const fields = [];
-    const params = [];
-    let paramIndex = 1;
-
-    if (detalleData.producto_id !== undefined) {
-      fields.push(`producto_id = $${paramIndex}`);
-      params.push(detalleData.producto_id);
+  async eliminarDetallePedido(id) {
+    try {
+      const sql = `UPDATE detalle_pedido SET activo = false WHERE id = $1`;
+      const result = await db.query(sql, [id]);
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error eliminando detalle:", error);
     }
-
-    if (detalleData.carne_id !== undefined) {
-      fields.push(`carne_id = $${paramIndex}`);
-      params.push(detalleData.carne_id);
-    }
-
-    if (detalleData.cantidad !== undefined) {
-      fields.push(`cantidad = $${paramIndex}`);
-      params.push(detalleData.cantidad);
-    }
-
-    if (detalleData.kg_carne !== undefined) {
-      fields.push(`kg_carne = $${paramIndex}`);
-      params.push(detalleData.kg_carne);
-    }
-
-    if (detalleData.subtotal !== undefined) {
-      fields.push(`subtotal = $${paramIndex}`);
-      params.push(detalleData.subtotal);
-    }
-
-    if (fields.length === 0) {
-      throw new ValidationError('No se proporcionaron campos para actualizar', 400);
-    }
-
-    fields.push(`WHERE id = $${paramIndex}`);
-    params.push(id);
-
-    const queryText = `UPDATE detalle_pedido SET ${fields.join(', ')} RETURNING *`;
-
-    const result = await query(queryText, params);
-
-    if (result.rows.length === 0) {
-      throw new ValidationError('Detalle de pedido no encontrado', 404);
-    }
-
-    return result.rows[0];
   }
 
-  /**
-   * Eliminar detalle de pedido
-   * @param {number} id - ID del detalle
-   * @returns {boolean} - Estado de la operación
-   */
-  async delete(id) {
-    const result = await query(
-      "UPDATE detalle_pedido SET producto_id = NULL WHERE id = $1",
-      [id]
-    );
-
-    return result.rowCount > 0;
-  }
-
-  /**
-   * Obtener total de pedido
-   * @param {number} pedidoId - ID del pedido
-   * @returns {Object} - Totales del pedido
-   */
-  async getPedidoTotals(pedidoId) {
-    const result = await query(
-      `SELECT 
-        SUM(subtotal) as total,
-        COUNT(*) as items,
-        SUM(kg_carne) as total_kg_carne
-      FROM detalle_pedido
-      WHERE pedido_id = $1
-      AND producto_id IS NOT NULL`,
-      [pedidoId]
-    );
-
-    return result.rows[0];
+  async obtenerSubtotalPedido(pedidoId) {
+    try {
+      const sql = `SELECT SUM(dp.cantidad * dp.precio_unitario) as subtotal 
+                    FROM detalle_pedido dp
+                    WHERE dp.pedido_id = $1 AND dp.activo = true`;
+      const result = await db.query(sql, [pedidoId]);
+      return result.rows[0];
+    } catch (error) {
+      console.error("Error obteniendo subtotal:", error);
+    }
   }
 }
+
+module.exports = new DetallePedidoService();
