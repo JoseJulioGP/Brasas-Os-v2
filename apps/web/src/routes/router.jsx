@@ -3,13 +3,15 @@ import { useAuthStore } from "../features/auth/stores/useAuthStore";
 import { LoginPage } from "../features/auth/components/LoginPage";
 import { RegisterPage } from "../features/auth/components/RegisterPage";
 import DashboardPage from "../features/dashboard/components/DashboardPage";
+import { InventoryPage } from "../features/inventory/components/InventoryPage";
+import { DashboardLayout } from "../components/DashboardLayout";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return <DashboardLayout>{children}</DashboardLayout>;
 };
 
 const PublicRoute = ({ children }) => {
@@ -42,6 +44,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <DashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/inventory",
+    element: (
+      <ProtectedRoute>
+        <InventoryPage />
       </ProtectedRoute>
     ),
   },

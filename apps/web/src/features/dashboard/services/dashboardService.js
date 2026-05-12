@@ -41,12 +41,12 @@ export const mockFinancial = {
 };
 
 export const mockInventory = [
-  { id: 1, nombre: "Carne de Res", cantidad: 25, unidad: "kg", stockMinimo: 10, precioKg: 18000 },
-  { id: 2, nombre: "Pollo", cantidad: 20, unidad: "kg", stockMinimo: 8, precioKg: 12000 },
-  { id: 3, nombre: "Chuleta", cantidad: 15, unidad: "kg", stockMinimo: 5, precioKg: 22000 },
-  { id: 4, nombre: "Costillas", cantidad: 12, unidad: "kg", stockMinimo: 5, precioKg: 20000 },
-  { id: 5, nombre: "Cerdo", cantidad: 8, unidad: "kg", stockMinimo: 8, precioKg: 16000 },
-  { id: 6, nombre: "Pichinchas", cantidad: 5, unidad: "kg", stockMinimo: 3, precioKg: 25000 }
+  { id: 1, nombre: "Carne de Res", cantidad: 25, unidad: "kg", stockMinimo: 10, precioKg: 18000, ultimaActualizacion: "2026-05-11 08:30", proveedor: "Carnes Premium" },
+  { id: 2, nombre: "Pollo", cantidad: 20, unidad: "kg", stockMinimo: 8, precioKg: 12000, ultimaActualizacion: "2026-05-10 14:15", proveedor: "Avícola del Sur" },
+  { id: 3, nombre: "Chuleta", cantidad: 15, unidad: "kg", stockMinimo: 5, precioKg: 22000, ultimaActualizacion: "2026-05-11 06:45", proveedor: "Carnes Premium" },
+  { id: 4, nombre: "Costillas", cantidad: 12, unidad: "kg", stockMinimo: 5, precioKg: 20000, ultimaActualizacion: "2026-05-09 10:00", proveedor: "Distribuidora BBQ" },
+  { id: 5, nombre: "Cerdo", cantidad: 8, unidad: "kg", stockMinimo: 8, precioKg: 16000, ultimaActualizacion: "2026-05-08 16:20", proveedor: "Carnes Premium" },
+  { id: 6, nombre: "Pichinchas", cantidad: 5, unidad: "kg", stockMinimo: 3, precioKg: 25000, ultimaActualizacion: "2026-05-11 07:00", proveedor: "Distribuidora BBQ" }
 ];
 
 export const mockActionHistory = [
