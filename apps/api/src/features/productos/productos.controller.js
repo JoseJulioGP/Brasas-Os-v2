@@ -1,11 +1,8 @@
 const productosService = require('./productos.service');
 
-<<<<<<< Updated upstream
-=======
 // SRP: El controlador solo maneja HTTP, extrae datos y valida
 // La lógica de negocio está en el service
 
->>>>>>> Stashed changes
 const getProductos = async (req, res) => {
   try {
     const productos = await productosService.getAll();
@@ -37,10 +34,6 @@ const createProducto = async (req, res) => {
     return res.status(400).json({ message: 'Nombre y precio son requeridos' });
   }
 
-<<<<<<< Updated upstream
-  try {
-    const producto = await productosService.create({ nombre, precio_venta, costo_produccion, categoria });
-=======
   // Validación de negocio: costo no debe superar precio
   if (costo_produccion && precio_venta && costo_produccion >= precio_venta) {
     return res.status(400).json({ 
@@ -56,7 +49,6 @@ const createProducto = async (req, res) => {
       costo_produccion, 
       categoria 
     });
->>>>>>> Stashed changes
     res.status(201).json(producto);
   } catch (error) {
     console.error('Error creating producto:', error);
@@ -68,10 +60,6 @@ const updateProducto = async (req, res) => {
   const { id } = req.params;
   const { nombre, precio_venta, costo_produccion, categoria, activo } = req.body;
 
-<<<<<<< Updated upstream
-  try {
-    const producto = await productosService.update(id, { nombre, precio_venta, costo_produccion, categoria, activo });
-=======
   // Validación de negocio
   if (costo_produccion && precio_venta && costo_produccion >= precio_venta) {
     return res.status(400).json({ 
@@ -88,7 +76,6 @@ const updateProducto = async (req, res) => {
       categoria, 
       activo 
     });
->>>>>>> Stashed changes
     if (!producto) {
       return res.status(404).json({ message: 'Producto no encontrado' });
     }

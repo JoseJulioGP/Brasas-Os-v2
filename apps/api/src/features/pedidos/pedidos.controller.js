@@ -1,10 +1,7 @@
 const pedidosService = require('./pedidos.service');
 
-<<<<<<< Updated upstream
-=======
 // SRP: El controlador solo maneja HTTP, extrae datos y valida
 
->>>>>>> Stashed changes
 const createPedido = async (req, res) => {
   const { items } = req.body;
   const empleado_id = req.user.id;
