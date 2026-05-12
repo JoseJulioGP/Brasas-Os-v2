@@ -1,14 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const usersController = require('./users.controller');
-const { verifyToken, requireRole } = require('../../shared/middlewares/auth.middleware');
+const authController = require('./controller');
 
-router.use(verifyToken);
-router.use(requireRole('ADMIN'));
+router.post('/login', authController.login);
+router.post('/register', authController.register);
 
-router.post('/', usersController.createUser);
-router.get('/', usersController.getUsers);
-router.get('/:id', usersController.getUserById);
-router.put('/:id', usersController.updateUser);
-router.delete('/:id', usersController.deactivateUser);
 module.exports = router;
