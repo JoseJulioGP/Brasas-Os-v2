@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Input, Button, Form } from "@heroui/react";
 import { FaEnvelope, FaUser, FaArrowRight, FaChartBar, FaUsers, FaBox } from "react-icons/fa";
 import { useAuthStore } from "../stores/useAuthStore";
+import { getRedirectPath } from "../../../utils/authUtils";
 import { AuthBackground } from "./AuthBackground";
 import { AuthBrandSection } from "./AuthBrandSection";
 import { AuthCardHeader } from "./AuthCardHeader";
