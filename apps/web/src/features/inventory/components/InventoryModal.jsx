@@ -1,16 +1,34 @@
 import { useState } from "react";
-import { FaFire } from "react-icons/fa";
+import { FaFire, FaSpinner } from "react-icons/fa";
 import { categorias } from "../utils/inventoryUtils";
 
 const InventoryModal = ({ isOpen, onClose, onAdd }) => {
-  const [newItem, setNewItem] = useState({ nombre: "", cantidad: "", unidad: "unid", stockMinimo: "", precio: "", categoria: "carnes", proveedor: "" });
+  const [newItem, setNewItem] = useState({ nombre: "", cantidad: "", unidad: "unid", stockMinimo: "", categoria: "carnes" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newItem.nombre || !newItem.cantidad) return;
-    onAdd(newItem);
-    setNewItem({ nombre: "", cantidad: "", unidad: "unid", stockMinimo: "", precio: "", categoria: "carnes", proveedor: "" });
+    setSubmitting(true);
+    setError("");
+
+    try {
+      await onAdd({
+        nombre: newItem.nombre,
+        cantidad: Number(newItem.cantidad),
+        unidad: newItem.unidad,
+        stockMinimo: Number(newItem.stockMinimo) || 1,
+        categoria: newItem.categoria,
+      });
+      setNewItem({ nombre: "", cantidad: "", unidad: "unid", stockMinimo: "", categoria: "carnes" });
+      onClose();
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || "Error al crear el insumo");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -26,6 +44,12 @@ const InventoryModal = ({ isOpen, onClose, onAdd }) => {
             <p className="text-xs text-white/40 font-body">Agregar producto al inventario</p>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-5 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 font-body">
+            {error}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -59,25 +83,18 @@ const InventoryModal = ({ isOpen, onClose, onAdd }) => {
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-white/60 font-body mb-1.5">Stock mínimo</label>
-              <input type="number" value={newItem.stockMinimo} onChange={(e) => setNewItem({ ...newItem, stockMinimo: e.target.value })} placeholder="10" className="w-full px-4 py-2.5 glass rounded-xl text-sm text-[#f5f0eb] placeholder-white/20 font-number outline-none transition-all duration-200 focus:border-orange-500/30" />
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 font-body mb-1.5">Precio unitario</label>
-              <input type="number" value={newItem.precio} onChange={(e) => setNewItem({ ...newItem, precio: e.target.value })} placeholder="18000" className="w-full px-4 py-2.5 glass rounded-xl text-sm text-[#f5f0eb] placeholder-white/20 font-number outline-none transition-all duration-200 focus:border-orange-500/30" />
-            </div>
-          </div>
           <div>
-            <label className="block text-sm text-white/60 font-body mb-1.5">Proveedor</label>
-            <input value={newItem.proveedor} onChange={(e) => setNewItem({ ...newItem, proveedor: e.target.value })} placeholder="Ej: Carnes Premium" className="w-full px-4 py-2.5 glass rounded-xl text-sm text-[#f5f0eb] placeholder-white/20 font-body outline-none transition-all duration-200 focus:border-orange-500/30" />
+            <label className="block text-sm text-white/60 font-body mb-1.5">Stock mínimo</label>
+            <input type="number" value={newItem.stockMinimo} onChange={(e) => setNewItem({ ...newItem, stockMinimo: e.target.value })} placeholder="10" className="w-full px-4 py-2.5 glass rounded-xl text-sm text-[#f5f0eb] placeholder-white/20 font-number outline-none transition-all duration-200 focus:border-orange-500/30" />
           </div>
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 glass rounded-xl text-sm text-white/60 font-body hover:bg-white/[0.06] transition-all duration-200">Cancelar</button>
-          <button onClick={handleAdd} className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-sm font-medium font-body transition-all duration-200 shadow-lg shadow-orange-600/20">Agregar</button>
+          <button onClick={onClose} disabled={submitting} className="flex-1 py-2.5 glass rounded-xl text-sm text-white/60 font-body hover:bg-white/[0.06] transition-all duration-200 disabled:opacity-50">Cancelar</button>
+          <button onClick={handleAdd} disabled={submitting} className="flex-1 py-2.5 bg-orange-600 hover:bg-orange-500 disabled:bg-orange-600/50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-medium font-body transition-all duration-200 shadow-lg shadow-orange-600/20 flex items-center justify-center gap-2">
+            {submitting ? <FaSpinner className="animate-spin" /> : null}
+            {submitting ? "Creando..." : "Agregar"}
+          </button>
         </div>
       </div>
     </div>

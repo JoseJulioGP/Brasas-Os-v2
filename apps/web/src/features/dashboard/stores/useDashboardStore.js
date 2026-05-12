@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { fetchDashboardData, mockStats } from '../services/dashboardService';
+import { create } from "zustand";
+import { fetchDashboardData } from "../services/dashboardService";
 
 const useDashboardStore = create((set, get) => ({
-  periodo: 'dia',
+  periodo: "dia",
   stats: null,
   financial: null,
   inventory: [],
@@ -11,7 +11,7 @@ const useDashboardStore = create((set, get) => ({
   error: null,
 
   setPeriodo: (periodo) => {
-    set({ periodo, stats: mockStats[periodo] });
+    set({ periodo });
   },
 
   fetchData: async () => {
@@ -24,12 +24,12 @@ const useDashboardStore = create((set, get) => ({
         financial: data.financial,
         inventory: data.inventory,
         actionHistory: data.actionHistory,
-        isLoading: false
+        isLoading: false,
       });
     } catch (error) {
       set({ error: error.message, isLoading: false });
     }
-  }
+  },
 }));
 
 export default useDashboardStore;

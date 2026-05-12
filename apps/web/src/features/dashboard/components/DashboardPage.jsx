@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useDashboardStore from '../stores/useDashboardStore';
+import { useAuthStore } from '../../auth/stores/useAuthStore';
 import PeriodFilter from './PeriodFilter';
 import StatsCards from './StatsCards';
 import FinancialSummary from './FinancialSummary';
@@ -16,6 +17,7 @@ const Spinner = () => (
 );
 
 const DashboardPage = () => {
+  const { user } = useAuthStore();
   const {
     periodo,
     stats,
@@ -27,12 +29,15 @@ const DashboardPage = () => {
     fetchData
   } = useDashboardStore();
 
+  const [initialLoad, setInitialLoad] = useState(true);
+
   useEffect(() => {
-    fetchData();
+    fetchData().finally(() => setInitialLoad(false));
   }, []);
 
   const handlePeriodoChange = (newPeriodo) => {
     setPeriodo(newPeriodo);
+    fetchData();
   };
 
   return (
@@ -49,14 +54,14 @@ const DashboardPage = () => {
 
         <PeriodFilter periodo={periodo} onPeriodoChange={handlePeriodoChange} />
 
-        {isLoading ? (
+        {isLoading && initialLoad ? (
           <Spinner />
         ) : (
           <>
             <StatsCards stats={stats} periodo={periodo} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-              <FinancialSummary financial={financial} />
+              {user?.rol === 'ADMIN' && <FinancialSummary financial={financial} />}
               <InventoryCard inventory={inventory} />
             </div>
 

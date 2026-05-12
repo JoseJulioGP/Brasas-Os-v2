@@ -20,7 +20,6 @@ const InventoryCard = ({ item }) => {
               <h3 className="text-base font-semibold text-[#f5f0eb] font-body truncate">{item.nombre}</h3>
               {cat && <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cat.color}`}>{cat.label}</span>}
             </div>
-            <p className="text-xs text-white/40 font-body truncate">{item.proveedor}</p>
           </div>
         </div>
 
@@ -42,11 +41,6 @@ const InventoryCard = ({ item }) => {
               <span>Min: {item.stockMinimo}</span>
               <span>Max: {item.stockMinimo * 3}</span>
             </div>
-          </div>
-
-          <div className="hidden lg:block text-center min-w-[90px]">
-            <p className="text-sm font-bold font-number text-white/70">${item.precio?.toLocaleString("es-CO")}</p>
-            <p className="text-[10px] text-white/40 font-body">/unid</p>
           </div>
 
           <div className="hidden md:flex items-center gap-2 text-xs text-white/40 font-body min-w-[100px]">

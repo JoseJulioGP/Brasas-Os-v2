@@ -12,7 +12,7 @@ const useInventoryStore = create((set, get) => ({
       const items = await inventoryService.getAll();
       set({ items, isLoading: false });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.response?.data?.message || error.message, isLoading: false });
     }
   },
 
@@ -23,7 +23,8 @@ const useInventoryStore = create((set, get) => ({
       set((state) => ({ items: [...state.items, newItem], isLoading: false }));
       return newItem;
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      set({ error: error.response?.data?.message || error.message, isLoading: false });
+      throw error;
     }
   },
 
@@ -34,7 +35,8 @@ const useInventoryStore = create((set, get) => ({
         items: state.items.map((i) => (i.id === id ? updated : i)),
       }));
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
     }
   },
 
@@ -43,7 +45,8 @@ const useInventoryStore = create((set, get) => ({
       await inventoryService.delete(id);
       set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
     } catch (error) {
-      set({ error: error.message });
+      set({ error: error.response?.data?.message || error.message });
+      throw error;
     }
   },
 }));
