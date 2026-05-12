@@ -40,7 +40,6 @@ export const InventoryPage = () => {
 
   const handleAdd = async (newItem) => {
     await addItem(newItem);
-    setShowModal(false);
   };
 
   return (
