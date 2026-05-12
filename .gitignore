@@ -1,0 +1,8 @@
+.env
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+.vscode/
+node_modules/
+dist/
