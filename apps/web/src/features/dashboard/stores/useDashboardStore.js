@@ -101,7 +101,10 @@ const useDashboardStore = create((set, get) => ({
   },
 
   // Limpiar error
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
+
+  // Alias para compatibilidad con DashboardPage
+  fetchData: async () => get().fetchAll()
 }));
 
 export default useDashboardStore;

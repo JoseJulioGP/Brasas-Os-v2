@@ -23,23 +23,29 @@ const EmptyState = () => (
 );
 
 export const InventoryPage = () => {
-  const { items, isLoading, fetchItems, addItem } = useInventoryStore();
+  const { carnes, insumos, isLoading, fetchAll, addCarne, addInsumo } = useInventoryStore();
   const [search, setSearch] = useState("");
   const [categoria, setCategoria] = useState("");
   const [showModal, setShowModal] = useState(false);
 
+  const items = [...(carnes || []), ...(insumos || [])];
+
   useEffect(() => {
-    fetchItems();
+    fetchAll();
   }, []);
 
   const filtered = items.filter((i) => {
-    const matchSearch = i.nombre.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = i.nombre?.toLowerCase().includes(search.toLowerCase());
     const matchCat = !categoria || i.categoria === categoria;
     return matchSearch && matchCat;
   });
 
   const handleAdd = async (newItem) => {
-    await addItem(newItem);
+    if (newItem.tipo === 'carne' || newItem.categoria === 'carnes') {
+      await addCarne(newItem);
+    } else {
+      await addInsumo(newItem);
+    }
   };
 
   return (
