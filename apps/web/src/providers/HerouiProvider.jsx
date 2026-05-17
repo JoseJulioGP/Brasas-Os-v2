@@ -1,3 +1,1 @@
-export const HerouiProvider = ({ children }) => {
-  return children;
-};
+export const HerouiProvider = ({ children }) => children;

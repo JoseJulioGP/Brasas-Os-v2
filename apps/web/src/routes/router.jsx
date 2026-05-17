@@ -7,14 +7,16 @@ import { InventoryPage } from "../features/inventory/components/InventoryPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { OrdersPage } from "../features/orders/components/OrdersPage";
 import { DashboardLayout } from "../components/DashboardLayout";
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   if (allowedRoles && user?.rol && !allowedRoles.includes(user.rol)) {
-    // Redirigir según el rol del usuario
     switch (user.rol) {
       case 'ADMIN':
         return <Navigate to="/admin/usuarios" replace />;
@@ -26,8 +28,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
         return <Navigate to="/dashboard" replace />;
     }
   }
+
   return <DashboardLayout>{children}</DashboardLayout>;
 };
+
 const PublicRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   if (isAuthenticated) {
@@ -35,8 +39,12 @@ const PublicRoute = ({ children }) => {
   }
   return children;
 };
+
 export const router = createBrowserRouter([
-  // Rutas públicas
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
   {
     path: "/login",
     element: (
@@ -52,11 +60,6 @@ export const router = createBrowserRouter([
         <RegisterPage />
       </PublicRoute>
     ),
-  },
-  // Rutas protegidas - Todas requieren autenticación
-  {
-    path: "/",
-    element: <Navigate to="/dashboard" replace />,
   },
   {
     path: "/dashboard",
@@ -74,7 +77,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  // Rutas de Admin
   {
     path: "/admin/usuarios",
     element: (
@@ -83,7 +85,6 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
-  // Rutas de Empleado
   {
     path: "/empleado/pedidos",
     element: (

@@ -26,18 +26,17 @@ const DashboardPage = () => {
     actionHistory,
     isLoading,
     setPeriodo,
-    fetchData
+    fetchAll
   } = useDashboardStore();
 
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    fetchData().finally(() => setInitialLoad(false));
+    fetchAll().finally(() => setInitialLoad(false));
   }, []);
 
   const handlePeriodoChange = (newPeriodo) => {
     setPeriodo(newPeriodo);
-    fetchData();
   };
 
   return (
