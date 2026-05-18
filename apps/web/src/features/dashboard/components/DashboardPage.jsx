@@ -22,25 +22,16 @@ const Spinner = () => (
 
 const DashboardPage = () => {
   const { user } = useAuthStore();
-  const {
-    periodo,
-    stats,
-    financial,
-    inventory,
-    actionHistory,
-    isLoading,
-    setPeriodo,
-    fetchAll
-  } = useDashboardStore();
-
+  const { periodo, stats, financial, inventory, actionHistory, topProducts, isLoading, setPeriodo, fetchData } = useDashboardStore();
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     fetchAll().finally(() => setInitialLoad(false));
   }, []);
 
-  const handlePeriodoChange = (newPeriodo) => {
-    setPeriodo(newPeriodo);
+  const handlePeriodoChange = (p) => {
+    setPeriodo(p);
+    fetchData();
   };
 
   return (

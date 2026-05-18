@@ -8,7 +8,9 @@ import { InventoryPage } from "../features/inventory/components/InventoryPage";
 import { MenuPage } from "../features/menu/components/MenuPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { OrdersPage } from "../features/orders/components/OrdersPage";
-import { DashboardLayout } from "../components/DashboardLayout";
+import { HistoryPage } from "../features/history/components/HistoryPage";
+import { AnalyticsPage } from "../features/analytics/components/AnalyticsPage";
+import { DashboardLayout } from "../layout/DashboardLayout";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -43,10 +45,12 @@ const PublicRoute = ({ children }) => {
 };
 
 export const router = createBrowserRouter([
+  // Landing pública
   {
     path: "/",
-    element: <Navigate to="/login" replace />,
+    element: <LandingPage />,
   },
+  // Rutas públicas (auth)
   {
     path: "/login",
     element: (
@@ -63,6 +67,7 @@ export const router = createBrowserRouter([
       </PublicRoute>
     ),
   },
+  // Rutas protegidas
   {
     path: "/dashboard",
     element: (
@@ -80,6 +85,39 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/analisis",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
+        <AnalyticsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/menu",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
+        <MenuPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/historial",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
+        <HistoryPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/pedidos",
+    element: (
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
+        <OrdersPage />
+      </ProtectedRoute>
+    ),
+  },
+  // Admin
+  {
     path: "/admin/usuarios",
     element: (
       <ProtectedRoute allowedRoles={["ADMIN"]}>
@@ -87,6 +125,7 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  // Empleado
   {
     path: "/empleado/pedidos",
     element: (
