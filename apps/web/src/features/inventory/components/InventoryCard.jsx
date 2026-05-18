@@ -1,4 +1,4 @@
-import { FiClock } from "react-icons/fi";
+import { FiClock, FiDollarSign } from "react-icons/fi";
 import { getStockStatus, getStockPercentage, formatFecha, categoriaPorId } from "../utils/inventoryUtils";
 
 const InventoryCard = ({ item }) => {
@@ -7,6 +7,9 @@ const InventoryCard = ({ item }) => {
   const Icon = status.icon;
   const cat = categoriaPorId[item.categoria];
   const CatIcon = cat?.icon;
+
+  const precio = item.precio || item.precio_por_kg || 0;
+  const totalValor = (item.cantidad || 0) * precio;
 
   return (
     <div className="glass rounded-2xl p-5 glass-hover">
@@ -20,6 +23,12 @@ const InventoryCard = ({ item }) => {
               <h3 className="text-base font-semibold text-[#f5f0eb] font-body truncate">{item.nombre}</h3>
               {cat && <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cat.color}`}>{cat.label}</span>}
             </div>
+            {precio > 0 && (
+              <p className="text-xs text-white/30 font-body flex items-center gap-1">
+                <FiDollarSign className="text-[10px]" />
+                ${precio.toLocaleString()} / {item.unidad || "unid"}
+              </p>
+            )}
           </div>
         </div>
 
@@ -39,9 +48,16 @@ const InventoryCard = ({ item }) => {
             </div>
             <div className="flex justify-between text-[10px] text-white/30 mt-1 font-body">
               <span>Min: {item.stockMinimo}</span>
-              <span>Max: {item.stockMinimo * 3}</span>
+              <span>Max: {(item.stockMinimo || 10) * 3}</span>
             </div>
           </div>
+
+          {totalValor > 0 && (
+            <div className="text-center min-w-[90px]">
+              <p className="text-sm font-bold font-number text-[#f5f0eb]">${totalValor.toLocaleString()}</p>
+              <p className="text-[10px] text-white/30 font-body uppercase tracking-wider">Valor total</p>
+            </div>
+          )}
 
           <div className="hidden md:flex items-center gap-2 text-xs text-white/40 font-body min-w-[100px]">
             <FiClock className="shrink-0" />
