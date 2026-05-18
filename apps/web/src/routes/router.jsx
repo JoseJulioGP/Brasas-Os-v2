@@ -2,8 +2,10 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { useAuthStore } from "../features/auth/stores/useAuthStore";
 import { LoginPage } from "../features/auth/components/LoginPage";
 import { RegisterPage } from "../features/auth/components/RegisterPage";
+import { LandingPage } from "../features/landing/components/LandingPage";
 import DashboardPage from "../features/dashboard/components/DashboardPage";
 import { InventoryPage } from "../features/inventory/components/InventoryPage";
+import { MenuPage } from "../features/menu/components/MenuPage";
 import { UsersPage } from "../features/users/components/UsersPage";
 import { OrdersPage } from "../features/orders/components/OrdersPage";
 import { DashboardLayout } from "../components/DashboardLayout";
@@ -18,11 +20,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (allowedRoles && user?.rol && !allowedRoles.includes(user.rol)) {
     switch (user.rol) {
-      case 'ADMIN':
+      case "ADMIN":
         return <Navigate to="/admin/usuarios" replace />;
-      case 'JEFE':
+      case "JEFE":
         return <Navigate to="/dashboard" replace />;
-      case 'EMPLEADO':
+      case "EMPLEADO":
         return <Navigate to="/empleado/pedidos" replace />;
       default:
         return <Navigate to="/dashboard" replace />;
@@ -64,7 +66,7 @@ export const router = createBrowserRouter([
   {
     path: "/dashboard",
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'JEFE']}>
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
         <DashboardPage />
       </ProtectedRoute>
     ),
@@ -72,7 +74,7 @@ export const router = createBrowserRouter([
   {
     path: "/inventory",
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN', 'JEFE']}>
+      <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
         <InventoryPage />
       </ProtectedRoute>
     ),
@@ -80,7 +82,7 @@ export const router = createBrowserRouter([
   {
     path: "/admin/usuarios",
     element: (
-      <ProtectedRoute allowedRoles={['ADMIN']}>
+      <ProtectedRoute allowedRoles={["ADMIN"]}>
         <UsersPage />
       </ProtectedRoute>
     ),
@@ -88,7 +90,7 @@ export const router = createBrowserRouter([
   {
     path: "/empleado/pedidos",
     element: (
-      <ProtectedRoute allowedRoles={['EMPLEADO']}>
+      <ProtectedRoute allowedRoles={["EMPLEADO"]}>
         <OrdersPage />
       </ProtectedRoute>
     ),
