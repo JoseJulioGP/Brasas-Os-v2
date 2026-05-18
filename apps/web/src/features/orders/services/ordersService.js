@@ -6,6 +6,11 @@ export const ordersService = {
     return response.data;
   },
 
+  async getAllOrders() {
+    const response = await api.get("/pedidos/todos");
+    return response.data;
+  },
+
   async getOrderById(id) {
     const response = await api.get(`/pedidos/${id}`);
     return response.data;
@@ -19,5 +24,5 @@ export const ordersService = {
   async updateOrderStatus(id, estado) {
     const response = await api.put(`/pedidos/${id}/estado`, { estado });
     return response.data;
-  }
+  },
 };
