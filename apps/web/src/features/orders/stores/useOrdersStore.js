@@ -1,11 +1,14 @@
 import { create } from "zustand";
 import { ordersService } from "../services/ordersService";
 
-export const useOrdersStore = create((set) => ({
+export const useOrdersStore = create((set, get) => ({
   orders: [],
   currentOrder: null,
   isLoading: false,
   error: null,
+  filters: { search: "", estado: "" },
+
+  setFilters: (filters) => set({ filters: { ...get().filters, ...filters } }),
 
   fetchOrders: async () => {
     set({ isLoading: true, error: null });
@@ -13,9 +16,22 @@ export const useOrdersStore = create((set) => ({
       const orders = await ordersService.getOrders();
       set({ orders, isLoading: false });
     } catch (error) {
-      set({ 
-        error: error.response?.data?.message || "Error al cargar pedidos", 
-        isLoading: false 
+      set({
+        error: error.response?.data?.message || "Error al cargar pedidos",
+        isLoading: false,
+      });
+    }
+  },
+
+  fetchAllOrders: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const orders = await ordersService.getAllOrders();
+      set({ orders, isLoading: false });
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error al cargar pedidos",
+        isLoading: false,
       });
     }
   },
@@ -27,9 +43,9 @@ export const useOrdersStore = create((set) => ({
       set({ currentOrder: order, isLoading: false });
       return order;
     } catch (error) {
-      set({ 
-        error: error.response?.data?.message || "Error al cargar pedido", 
-        isLoading: false 
+      set({
+        error: error.response?.data?.message || "Error al cargar pedido",
+        isLoading: false,
       });
       throw error;
     }
@@ -39,15 +55,15 @@ export const useOrdersStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const newOrder = await ordersService.createOrder(orderData);
-      set((state) => ({ 
-        orders: [newOrder, ...state.orders], 
-        isLoading: false 
+      set((state) => ({
+        orders: [newOrder, ...state.orders],
+        isLoading: false,
       }));
       return newOrder;
     } catch (error) {
-      set({ 
-        error: error.response?.data?.message || "Error al crear pedido", 
-        isLoading: false 
+      set({
+        error: error.response?.data?.message || "Error al crear pedido",
+        isLoading: false,
       });
       throw error;
     }
@@ -58,20 +74,21 @@ export const useOrdersStore = create((set) => ({
     try {
       const updatedOrder = await ordersService.updateOrderStatus(id, estado);
       set((state) => ({
-        orders: state.orders.map((o) => o.id === id ? updatedOrder : o),
-        currentOrder: state.currentOrder?.id === id ? updatedOrder : state.currentOrder,
-        isLoading: false
+        orders: state.orders.map((o) => (o.id === id ? updatedOrder : o)),
+        currentOrder:
+          state.currentOrder?.id === id ? updatedOrder : state.currentOrder,
+        isLoading: false,
       }));
       return updatedOrder;
     } catch (error) {
-      set({ 
-        error: error.response?.data?.message || "Error al actualizar pedido", 
-        isLoading: false 
+      set({
+        error: error.response?.data?.message || "Error al actualizar pedido",
+        isLoading: false,
       });
       throw error;
     }
   },
 
   clearCurrentOrder: () => set({ currentOrder: null }),
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
 }));
