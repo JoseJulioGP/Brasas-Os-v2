@@ -23,9 +23,20 @@ export const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
+    setValidationError("");
+
+    if (!nombre || !email || !password) {
+      setValidationError("Nombre, email y contraseña son requeridos");
+      return;
+    }
+
+    if (password.length < 6) {
+      setValidationError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
 
     if (password !== confirmPassword) {
-      useAuthStore.setState({ error: "Las contraseñas no coinciden" });
+      setValidationError("Las contraseñas no coinciden");
       return;
     }
 
