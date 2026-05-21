@@ -1,18 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const productosController = require('./productos.controller');
-const { verifyToken, requireRole } = require('../../shared/middlewares/auth.middleware');
+const { verifyToken, requireRole, requireAnyRole } = require('../../shared/middlewares/auth.middleware');
 
-// Rutas públicas - Empleados pueden ver el catálogo activo
-router.get('/', productosController.getProductos);
-router.get('/:id', productosController.getProductoById);
+// Ruta específica ANTES de /:id para que no sea capturada como parámetro
+router.get('/costos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.getProductosConCostos);
 
-// Rutas protegidas - Solo Admin puede crear, editar, eliminar
+// Catálogo - requiere auth para filtrar campos sensibles según rol (T-19)
+router.get('/', verifyToken, productosController.getProductos);
+router.get('/:id', verifyToken, productosController.getProductoById);
+
+// Solo Admin puede crear, editar, eliminar (T-12)
 router.post('/', verifyToken, requireRole('ADMIN'), productosController.createProducto);
 router.put('/:id', verifyToken, requireRole('ADMIN'), productosController.updateProducto);
 router.delete('/:id', verifyToken, requireRole('ADMIN'), productosController.deleteProducto);
-
-// Rutas para Jefe - ver costos y márgenes
-router.get('/costos', verifyToken, requireRole('JEFE'), productosController.getProductosConCostos);
 
 module.exports = router;

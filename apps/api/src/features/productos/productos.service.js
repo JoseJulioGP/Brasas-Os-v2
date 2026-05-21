@@ -1,44 +1,81 @@
 const db = require('../../shared/database/db');
 
-// SRP: Solo maneja la lógica de negocio relacionada con productos
-// DIP: Depende de la abstracción db, no de implementaciones concretas
-
 class ProductosService {
-  // GET /productos - Lista productos activos
-  async getAll() {
-    const sql = `SELECT id, nombre, precio_venta, categoria, activo, created_at
-                FROM productos 
-                WHERE activo = true
-                ORDER BY nombre`;
-    const result = await db.query(sql);
-    return result.rows;
+  async getAll(filtros = {}) {
+    let sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion,
+                      p.categoria, p.activo, p.created_at,
+                      (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen
+               FROM productos p
+               WHERE p.activo = true`;
+    const values = [];
+    let paramIndex = 1;
+
+    if (filtros.categoria) {
+      sql += ` AND p.categoria = $${paramIndex++}`;
+      values.push(filtros.categoria);
+    }
+
+    sql += ` ORDER BY p.nombre`;
+
+    if (filtros.limit) {
+      sql += ` LIMIT $${paramIndex++}`;
+      values.push(parseInt(filtros.limit));
+    }
+
+    if (filtros.offset) {
+      sql += ` OFFSET $${paramIndex++}`;
+      values.push(parseInt(filtros.offset));
+    }
+
+    const result = await db.query(sql, values);
+
+    let countSql = `SELECT COUNT(*) as total FROM productos WHERE activo = true`;
+    const countValues = [];
+    if (filtros.categoria) {
+      countSql += ` AND categoria = $1`;
+      countValues.push(filtros.categoria);
+    }
+    const countResult = await db.query(countSql, countValues);
+
+    return {
+      data: result.rows,
+      total: parseInt(countResult.rows[0].total),
+      filtros: {
+        categoria: filtros.categoria || null,
+        limite: filtros.limit || null
+      }
+    };
   }
 
-  // GET /productos/:id - Obtener un producto por ID
   async getById(id) {
-    const sql = `SELECT id, nombre, precio_venta, categoria, costo_produccion, activo, created_at
-                FROM productos 
-                WHERE id = $1 AND activo = true`;
+    const sql = `SELECT p.*, 
+                        (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen
+                 FROM productos p
+                 WHERE p.id = $1 AND p.activo = true`;
     const result = await db.query(sql, [id]);
     return result.rows[0];
   }
 
-  // GET /productos/costos - Productos con costos y márgenes (solo JEFE)
   async getAllWithCostos() {
-    const sql = `SELECT id, nombre, precio_venta, costo_produccion, categoria, activo, created_at,
-                (precio_venta - COALESCE(costo_produccion, 0)) as margen
-                FROM productos 
-                WHERE activo = true
-                ORDER BY nombre`;
+    const sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, 
+                        p.categoria, p.activo, p.created_at,
+                        (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen,
+                        CASE 
+                          WHEN p.costo_produccion > 0 
+                          THEN ROUND((p.precio_venta - p.costo_produccion) / p.costo_produccion * 100, 2)
+                          ELSE 0 
+                        END as porcentaje_margen
+                 FROM productos p
+                 WHERE p.activo = true
+                 ORDER BY margen DESC`;
     const result = await db.query(sql);
     return result.rows;
   }
 
-  // POST /productos - Crear producto
   async create(data) {
-    const sql = `INSERT INTO productos (nombre, precio_venta, costo_produccion, categoria, activo, created_at)
-                VALUES ($1, $2, $3, $4, true, NOW())
-                RETURNING *`;
+    const sql = `INSERT INTO productos (nombre, precio_venta, costo_produccion, categoria, activo)
+                 VALUES ($1, $2, $3, $4, true)
+                 RETURNING *`;
     const result = await db.query(sql, [
       data.nombre,
       data.precio_venta,
@@ -48,7 +85,6 @@ class ProductosService {
     return result.rows[0];
   }
 
-  // PUT /productos/:id - Actualizar producto
   async update(id, data) {
     const updates = [];
     const values = [];
@@ -85,10 +121,27 @@ class ProductosService {
     return result.rows[0];
   }
 
-  // DELETE /productos/:id - Soft delete (solo cambia activo a false)
   async delete(id) {
     const sql = `UPDATE productos SET activo = false WHERE id = $1 RETURNING id`;
     const result = await db.query(sql, [id]);
+    return result.rows[0];
+  }
+
+  async getCategorias() {
+    const sql = `SELECT DISTINCT categoria FROM productos WHERE categoria IS NOT NULL AND activo = true ORDER BY categoria`;
+    const result = await db.query(sql);
+    return result.rows.map(row => row.categoria);
+  }
+
+  async getEstadisticas() {
+    const sql = `SELECT 
+                   COUNT(*) as total_productos,
+                   AVG(precio_venta) as promedio_precio,
+                   SUM(precio_venta * COALESCE(stock_actual, 0)) as valor_total_stock,
+                   MAX(precio_venta) as precio_maximo,
+                   MIN(precio_venta) as precio_minimo
+                 FROM productos WHERE activo = true`;
+    const result = await db.query(sql);
     return result.rows[0];
   }
 }
