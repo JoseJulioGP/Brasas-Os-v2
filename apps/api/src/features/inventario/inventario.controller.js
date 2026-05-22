@@ -180,6 +180,35 @@ const createSalida = async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
+const getProductoCarne = async (req, res) => {
+  const { producto_id } = req.params;
+  try {
+    const config = await inventarioService.getProductoCarne(producto_id);
+    if (!config) return res.status(404).json({ message: 'Este producto no tiene configuración de carne' });
+    res.status(200).json(config);
+  } catch (error) {
+    console.error('Error getting producto_carne:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+// T-32: crear o actualizar configuración de carne (ADMIN only)
+const setProductoCarne = async (req, res) => {
+  const { producto_id } = req.params;
+  const { corte_ref, kg_requeridos } = req.body;
+
+  if (!corte_ref || kg_requeridos == null || parseFloat(kg_requeridos) <= 0) {
+    return res.status(400).json({ message: 'corte_ref y kg_requeridos (> 0) son requeridos' });
+  }
+
+  try {
+    const config = await inventarioService.setProductoCarne(producto_id, corte_ref, kg_requeridos);
+    res.status(200).json(config);
+  } catch (error) {
+    console.error('Error setting producto_carne:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
 
 module.exports = {
   getCarnes,
@@ -193,5 +222,7 @@ module.exports = {
   updateStockMinimo,
   getMovimientos,
   createEntrada,
-  createSalida
+  createSalida,
+  getProductoCarne,
+  setProductoCarne
 };
