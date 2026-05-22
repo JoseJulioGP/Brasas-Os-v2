@@ -26,12 +26,11 @@ const DashboardPage = () => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    fetchAll().finally(() => setInitialLoad(false));
+    fetchData().finally(() => setInitialLoad(false));
   }, []);
 
   const handlePeriodoChange = (p) => {
     setPeriodo(p);
-    fetchData();
   };
 
   return (
