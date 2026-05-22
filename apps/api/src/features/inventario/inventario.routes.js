@@ -1,23 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const inventarioController = require('./inventario.controller');
-const { verifyToken, requireRole } = require('../../shared/middlewares/auth.middleware');
+const { verifyToken, requireRole, requireAnyRole } = require('../../shared/middlewares/auth.middleware');
 
-// Rutas para Jefe (gestión de inventario completo)
-router.get('/carnes', verifyToken, requireRole('JEFE'), inventarioController.getCarnes);
+// === CARNES ===
+router.get('/carnes/disponibles', verifyToken, inventarioController.getCarnesDisponibles);
+router.get('/carnes', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getCarnes);
 router.post('/carnes', verifyToken, requireRole('JEFE'), inventarioController.createCarne);
 router.put('/carnes/:id', verifyToken, requireRole('JEFE'), inventarioController.updateCarne);
 
-// Rutas para empleados (solo consulta de carnes disponibles)
-router.get('/carnes/consulta', verifyToken, inventarioController.getCarnesDisponibles);
+// === INSUMOS ===
+// T-23: stock_minimo solo ADMIN
+router.patch('/insumos/:id/stock-minimo', verifyToken, requireRole('ADMIN'), inventarioController.updateStockMinimo);
+router.get('/insumos/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getInsumoById);
+router.get('/insumos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getInsumos);
+router.post('/insumos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createInsumo);
+router.put('/insumos/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.updateInsumo);
 
-// Rutas de insumos
-router.get('/insumos', verifyToken, requireRole('JEFE'), inventarioController.getInsumos);
-router.post('/insumos', verifyToken, requireRole('JEFE'), inventarioController.createInsumo);
-router.put('/insumos/:id', verifyToken, requireRole('JEFE'), inventarioController.updateInsumo);
-
-// Movimientos de stock
-router.get('/movimientos', verifyToken, requireRole('JEFE'), inventarioController.getMovimientos);
-router.post('/movimientos', verifyToken, requireRole('JEFE'), inventarioController.createMovimiento);
+// === MOVIMIENTOS ===
+// T-21: rutas semánticas /entrada y /salida
+router.post('/entrada', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createEntrada);
+router.post('/salida', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createSalida);
+router.get('/movimientos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getMovimientos);
 
 module.exports = router;
