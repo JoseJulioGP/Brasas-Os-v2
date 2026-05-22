@@ -66,7 +66,6 @@ const updateEstado = async (req, res) => {
   const empleado_id = req.user.id;
   const rol = req.user.rol;
 
-  // Validar transición de estados (Pendiente → En Proceso → Completado)
   const estadosValidos = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO'];
   if (!estadosValidos.includes(estado)) {
     return res.status(400).json({ message: 'Estado inválido' });
@@ -78,26 +77,29 @@ const updateEstado = async (req, res) => {
       return res.status(404).json({ message: 'Pedido no encontrado' });
     }
 
-    // Empleado solo puede cambiar estado de sus propios pedidos
     if (rol === 'EMPLEADO' && pedido.empleado_id !== empleado_id) {
       return res.status(403).json({ message: 'No puedes modificar este pedido' });
     }
 
-    // Validar que no se puede retroceder en el estado
     const estadosOrden = { 'PENDIENTE': 0, 'EN_PROCESO': 1, 'COMPLETADO': 2 };
     if (estadosOrden[estado] < estadosOrden[pedido.estado]) {
       return res.status(400).json({ message: 'No puedes retroceder el estado del pedido' });
     }
 
     const pedidoActualizado = await pedidosService.updateEstado(id, estado);
-    
-    // Si se completa, descontar stock
+
     if (estado === 'COMPLETADO') {
-      await pedidosService.descontarStock(id);
+      await pedidosService.descontarStock(id); // ahora relanza si hay stock insuficiente
     }
 
     res.status(200).json(pedidoActualizado);
   } catch (error) {
+    if (error.message && error.message.startsWith('STOCK_CARNE_INSUFICIENTE')) {
+      const corte = error.message.split(':')[1];
+      return res.status(409).json({
+        message: `Stock insuficiente de carne: ${corte}. El pedido fue marcado como completado pero no se descontó el inventario de carnes.`
+      });
+    }
     console.error('Error updating estado:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
