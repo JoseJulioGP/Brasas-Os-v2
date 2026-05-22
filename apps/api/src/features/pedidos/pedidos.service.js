@@ -194,6 +194,61 @@ class PedidosService {
     }
   }
 
+  async completarPedido(id) {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const pedidoResult = await client.query(
+      `UPDATE pedidos SET estado = 'COMPLETADO', updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id]
+    );
+    if (pedidoResult.rows.length === 0) throw new Error('PEDIDO_NO_ENCONTRADO');
+
+    const itemsResult = await client.query(
+      `SELECT pi.producto_id, pi.cantidad,
+              pc.corte_ref, pc.kg_requeridos
+       FROM pedido_items pi
+       LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
+       WHERE pi.pedido_id = $1`,
+      [id]
+    );
+
+    for (const item of itemsResult.rows) {
+      if (item.corte_ref && item.kg_requeridos) {
+        const kgADescontar = parseFloat(item.kg_requeridos) * item.cantidad;
+
+        const carneResult = await client.query(
+          'SELECT kg_disponibles FROM carnes WHERE corte = $1 FOR UPDATE',
+          [item.corte_ref]
+        );
+
+        if (carneResult.rows.length === 0) continue; // carne no registrada aún, no bloquear
+
+        const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
+        if (kgActual < kgADescontar) {
+          throw new Error(`STOCK_CARNE_INSUFICIENTE:${item.corte_ref}`);
+        }
+
+        await client.query(
+          `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 WHERE corte = $2`,
+          [kgADescontar, item.corte_ref]
+        );
+      }
+    }
+
+      await client.query('COMMIT');
+      return pedidoResult.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    }   finally {
+      client.release();
+    }
+  }
+
   // DELETE /pedidos/:id - Cancelar pedido (soft delete)
   async cancelPedido(id) {
     const sql = `UPDATE pedidos SET estado = 'CANCELADO', updated_at = NOW() WHERE id = $1 RETURNING id`;
