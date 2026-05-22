@@ -3,13 +3,39 @@ const db = require('../../shared/database/db');
 class InventarioService {
   // === CARNES ===
 
-  async getCarnes() {
-    const sql = `SELECT id, corte, kg_comprados, kg_disponibles, precio_por_kg, proveedor, fecha_compra
-                 FROM carnes
-                 ORDER BY fecha_compra DESC`;
-    const result = await db.query(sql);
-    return result.rows;
-  }
+ async getCarnes() {
+  const sql = `SELECT id, corte, kg_comprados, kg_disponibles, precio_por_kg, proveedor, fecha_compra,
+                      (kg_disponibles < 2) as alerta_stock
+               FROM carnes
+               ORDER BY fecha_compra DESC`;
+  const result = await db.query(sql);
+  return result.rows;
+}
+
+// T-32: consultar configuración de carne de un producto
+async getProductoCarne(producto_id) {
+  const result = await db.query(
+    `SELECT pc.*, p.nombre as producto_nombre
+     FROM producto_carnes pc
+     JOIN productos p ON pc.producto_id = p.id
+     WHERE pc.producto_id = $1`,
+    [producto_id]
+  );
+  return result.rows[0];
+}
+
+// T-32: upsert — si ya existe la configuración la actualiza, si no la crea
+async setProductoCarne(producto_id, corte_ref, kg_requeridos) {
+  const result = await db.query(
+    `INSERT INTO producto_carnes (producto_id, corte_ref, kg_requeridos)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (producto_id)
+     DO UPDATE SET corte_ref = $2, kg_requeridos = $3
+     RETURNING *`,
+    [producto_id, corte_ref, kg_requeridos]
+  );
+  return result.rows[0];
+}
 
   async getCarnesDisponibles() {
     const sql = `SELECT id, corte, kg_disponibles, precio_por_kg
