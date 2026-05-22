@@ -6,7 +6,7 @@ const db = require('../../shared/database/db');
 class PedidosService {
   // POST /pedidos - Crear pedido con items
   async createPedido(empleado_id, items) {
-    const client = await db.connect();
+    const client = await db.pool.connect();
     
     try {
       await client.query('BEGIN');
@@ -146,7 +146,7 @@ class PedidosService {
 
   // PUT /pedidos/:id - Editar pedido completo
   async updatePedido(id, items) {
-    const client = await db.connect();
+    const client = await db.pool.connect();
     
     try {
       await client.query('BEGIN');
@@ -256,45 +256,6 @@ class PedidosService {
     return result.rows[0];
   }
 
-  // Descontar stock al completar pedido
-  async descontarStock(pedidoId) {
-    const client = await db.connect();
-    
-    try {
-      await client.query('BEGIN');
-
-      const itemsResult = await client.query(
-        `SELECT pi.producto_id, pi.cantidad, pc.kg_requeridos
-        FROM pedido_items pi
-        LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
-        WHERE pi.pedido_id = $1`,
-        [pedidoId]
-      );
-
-      for (const item of itemsResult.rows) {
-        await client.query(
-          `UPDATE productos SET stock_actual = stock_actual - $1 WHERE id = $2`,
-          [item.cantidad, item.producto_id]
-        );
-
-        if (item.kg_requeridos) {
-          const kgADescontar = item.kg_requeridos * item.cantidad;
-          await client.query(
-            `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 
-            WHERE id = (SELECT carne_id FROM producto_carnes WHERE producto_id = $2)`,
-            [kgADescontar, item.producto_id]
-          );
-        }
-      }
-
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Error descontando stock:', error);
-    } finally {
-      client.release();
-    }
-  }
 }
 
 module.exports = new PedidosService();
