@@ -1,164 +1,113 @@
 import api from "../../../services/api";
 
-// Dashboard data - usa endpoints reales cuando existan, si no usa mocks
-export const fetchDashboardData = async (periodo) => {
-  try {
-    const { data } = await api.get(`/reportes/dashboard?periodo=${periodo}`);
-    return data;
-  } catch (error) {
-    console.log('Dashboard endpoint no disponible, usando datos de pedidos');
-    return fetchFromPedidos(periodo);
+const periodoMap = { dia: "diario", semana: "semanal", mes: "mensual" };
+
+const getFechaInicio = (periodo) => {
+  const hoy = new Date();
+  if (periodo === "dia") {
+    const d = new Date(hoy); d.setHours(0, 0, 0, 0); return d;
   }
+  if (periodo === "semana") {
+    const d = new Date(hoy); d.setDate(hoy.getDate() - 6); d.setHours(0, 0, 0, 0); return d;
+  }
+  return new Date(hoy.getFullYear(), hoy.getMonth(), 1);
 };
 
-const fetchFromPedidos = async (periodo) => {
-  try {
-    const pedidos = await api.get('/pedidos/todos');
-    const productos = await api.get('/productos');
-    const carnes = await api.get('/inventario/carnes/consulta');
-    
-    const pedidosData = pedidos.data || [];
-    const productosData = productos.data || [];
-    const carnesData = carnes.data || [];
-
-    const hoy = new Date();
-    let pedidosFiltrados = pedidosData;
-
-    if (periodo === 'dia') {
-      pedidosFiltrados = pedidosData.filter(p => {
-        const fecha = new Date(p.fecha);
-        return fecha.toDateString() === hoy.toDateString();
-      });
-    } else if (periodo === 'semana') {
-      const haceUnaSemana = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-      pedidosFiltrados = pedidosData.filter(p => new Date(p.fecha) >= haceUnaSemana);
-    }
-
-    const ingresos = pedidosFiltrados.reduce((sum, p) => sum + (p.total || 0), 0);
-    const stockTotal = carnesData.reduce((sum, c) => sum + (c.kg_disponibles || 0), 0);
-
-    return {
-      pedidos: pedidosFiltrados.length,
-      ingresos,
-      clientesAtendidos: pedidosFiltrados.length,
-      stockTotal,
-      productosActivos: productosData.length
-    };
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return getMockData(periodo);
-  }
-};
-
-// Stats - obtiene datos de pedidos y productos
-export const fetchStats = async (periodo) => {
-  try {
-    const response = await api.get(`/reportes/estadisticas?periodo=${periodo}`);
-    return response.data;
-  } catch (error) {
-    const data = await fetchFromPedidos(periodo);
-    return {
-      dia: { pedidos: data.pedidos, ingresos: data.ingresos, clientesAtendidos: data.clientesAtendidos, stockTotal: data.stockTotal },
-      semana: { pedidos: data.pedidos * 3, ingresos: data.ingresos * 3, clientesAtendidos: data.clientesAtendidos * 3, stockTotal: data.stockTotal },
-      mes: { pedidos: data.pedidos * 15, ingresos: data.ingresos * 15, clientesAtendidos: data.clientesAtendidos * 15, stockTotal: data.stockTotal }
-    };
-  }
-};
-
-// Resumen financiero - calcula desde pedidos
+// Resumen financiero real desde /reportes/resumen
 export const fetchFinancialSummary = async (periodo) => {
   try {
-    const response = await api.get(`/reportes/resumen?periodo=${periodo}`);
-    return response.data;
-  } catch (error) {
-    const data = await fetchFromPedidos(periodo);
-    const ingresos = data.ingresos || 0;
-    const costos = ingresos * 0.4;
-    const ganancia = ingresos - costos;
-    const margen = ingresos > 0 ? (ganancia / ingresos) * 100 : 0;
-
+    const mapped = periodoMap[periodo] || "mensual";
+    const { data } = await api.get(`/reportes/resumen?periodo=${mapped}`);
     return {
-      dia: { ingresos, costos, ganancia, margen },
-      semana: { ingresos: ingresos * 7, costos: costos * 7, ganancia: ganancia * 7, margen },
-      mes: { ingresos: ingresos * 30, costos: costos * 30, ganancia: ganancia * 30, margen }
+      ingresos: data.ingresos,
+      costos: data.costo_total,
+      ganancia: data.utilidad,
+      margen: data.margen,
+      utilidad_positiva: data.utilidad_positiva,
+      variacion_utilidad: data.periodo_anterior?.variacion_utilidad ?? null,
     };
+  } catch {
+    try {
+      const fechaInicio = getFechaInicio(periodo);
+      const { data: pedidos } = await api.get("/pedidos/todos", {
+        params: { fecha_inicio: fechaInicio.toISOString() },
+      });
+      const completados = (pedidos || []).filter((p) => p.estado === "COMPLETADO");
+      const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
+      return { ingresos, costos: 0, ganancia: ingresos, margen: 0, utilidad_positiva: ingresos > 0, variacion_utilidad: null };
+    } catch {
+      return { ingresos: 0, costos: 0, ganancia: 0, margen: 0, utilidad_positiva: false, variacion_utilidad: null };
+    }
   }
 };
 
-// Inventario - obtiene datos reales del backend
+// Stats del período: pedidos contados + stock carnes
+export const fetchStats = async (periodo) => {
+  try {
+    const fechaInicio = getFechaInicio(periodo);
+    const [pedidosRes, carnesRes] = await Promise.allSettled([
+      api.get("/pedidos/todos", { params: { fecha_inicio: fechaInicio.toISOString() } }),
+      api.get("/inventario/carnes/consulta"),
+    ]);
+    const pedidos = pedidosRes.status === "fulfilled" ? (pedidosRes.value.data || []) : [];
+    const carnes  = carnesRes.status  === "fulfilled" ? (carnesRes.value.data  || []) : [];
+    const completados = pedidos.filter((p) => p.estado === "COMPLETADO");
+    const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
+    const stockTotal = carnes.reduce((s, c) => s + (parseFloat(c.kg_disponibles) || 0), 0);
+    return {
+      pedidos: pedidos.length,
+      ingresos,
+      clientesAtendidos: completados.length,
+      stockTotal: Math.round(stockTotal * 10) / 10,
+    };
+  } catch {
+    return { pedidos: 0, ingresos: 0, clientesAtendidos: 0, stockTotal: 0 };
+  }
+};
+
+// Inventario de carnes disponibles
 export const fetchInventory = async () => {
   try {
-    const response = await api.get('/inventario/carnes/consulta');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching inventory:', error);
+    const { data } = await api.get("/inventario/carnes/consulta");
+    return data || [];
+  } catch {
     return [];
   }
 };
 
-// Historial de acciones - obtiene pedidos como historial
-export const fetchActionHistory = async (filtros = {}) => {
-  try {
-    const response = await api.get('/pedidos', { params: filtros });
-    return response.data.map(p => ({
-      id: p.id,
-      tipo_accion: p.estado,
-      entidad: 'pedido',
-      descripcion: `Pedido #${p.id?.slice(0, 8)} - ${p.estado}`,
-      fecha: p.fecha,
-      usuario: p.empleado_nombre
-    }));
-  } catch (error) {
-    console.error('Error fetching action history:', error);
-    return [];
-  }
-};
-
-// Pedidos del turno actual
-export const fetchPedidosTurno = async () => {
-  try {
-    const response = await api.get('/pedidos');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching pedidos turno:', error);
-    return [];
-  }
-};
-
-// Top productos - obtiene desde productos
+// Top productos del día desde /reportes/turno, sin datos aleatorios
 export const fetchTopProducts = async () => {
   try {
-    const response = await api.get('/productos');
-    const productos = response.data || [];
-    return productos.slice(0, 5).map(p => ({
-      id: p.id,
+    const { data } = await api.get("/reportes/turno");
+    return (data.top_productos || []).map((p) => ({
       nombre: p.nombre,
-      ventas: Math.floor(Math.random() * 50) + 10,
-      ingresos: p.precio_venta * (Math.floor(Math.random() * 50) + 10)
+      ventas: parseInt(p.total_vendido) || 0,
     }));
-  } catch (error) {
-    console.error('Error fetching top products:', error);
+  } catch {
+    try {
+      const { data } = await api.get("/productos");
+      return (data || []).slice(0, 5).map((p) => ({ nombre: p.nombre, ventas: 0 }));
+    } catch {
+      return [];
+    }
+  }
+};
+
+// Historial basado en pedidos recientes
+export const fetchActionHistory = async () => {
+  try {
+    const { data } = await api.get("/pedidos");
+    return (data || []).slice(0, 10).map((p) => ({
+      id: p.id,
+      tipo_accion: p.estado,
+      entidad: "pedido",
+      descripcion: `Pedido #${p.id?.slice(0, 8)} - ${p.estado}`,
+      fecha: p.fecha,
+      usuario: p.empleado_nombre,
+    }));
+  } catch {
     return [];
   }
 };
 
-// Fallback: datos mock
-const getMockData = (periodo) => ({
-  pedidos: 0,
-  ingresos: 0,
-  clientesAtendidos: 0,
-  stockTotal: 0,
-  productosActivos: 0
-});
-
-export const mockStats = {
-  dia: { pedidos: 0, ingresos: 0, clientesAtendidos: 0, stockTotal: 0 },
-  semana: { pedidos: 0, ingresos: 0, clientesAtendidos: 0, stockTotal: 0 },
-  mes: { pedidos: 0, ingresos: 0, clientesAtendidos: 0, stockTotal: 0 }
-};
-
-export const mockFinancial = {
-  dia: { ingresos: 0, costos: 0, ganancia: 0, margen: 0 },
-  semana: { ingresos: 0, costos: 0, ganancia: 0, margen: 0 },
-  mes: { ingresos: 0, costos: 0, ganancia: 0, margen: 0 }
-};
+export const fetchDashboardData = fetchFinancialSummary;
