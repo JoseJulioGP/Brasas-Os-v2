@@ -2,7 +2,7 @@ import { FaBox } from "react-icons/fa";
 import { StatusBadge } from "./StatusBadge";
 import { useMenuStore } from "../../menu/stores/useMenuStore";
 
-export const OrderCard = ({ order, onStatusChange }) => {
+export const OrderCard = ({ order, onStatusChange, onCancel }) => {
   const { items: menuItems } = useMenuStore();
 
   const getItemName = (id) => {
@@ -92,8 +92,8 @@ export const OrderCard = ({ order, onStatusChange }) => {
             {next.label}
           </button>
         )}
-        {(order.estado === "PENDIENTE" || order.estado === "EN_PROCESO") && (
-          <button onClick={() => onStatusChange(order.id, "CANCELADO")}
+        {onCancel && (order.estado === "PENDIENTE" || order.estado === "EN_PROCESO") && (
+          <button onClick={() => onCancel(order.id)}
             className="flex-1 py-2 bg-red-600/10 text-red-400 rounded-xl text-sm font-medium hover:bg-red-600/20 transition-all font-body">
             Cancelar
           </button>
