@@ -25,8 +25,8 @@ export const OrderCard = ({ order, onStatusChange, onCancel }) => {
 
   const nextState = (current) => {
     switch (current) {
-      case "PENDIENTE": return { next: "EN_PROCESO", label: "Iniciar" };
-      case "EN_PROCESO": return { next: "COMPLETADO", label: "Completar" };
+      case "pendiente":  return { next: "preparando", label: "Iniciar" };
+      case "preparando": return { next: "entregado",  label: "Completar" };
       default: return null;
     }
   };
@@ -92,7 +92,7 @@ export const OrderCard = ({ order, onStatusChange, onCancel }) => {
             {next.label}
           </button>
         )}
-        {onCancel && (order.estado === "PENDIENTE" || order.estado === "EN_PROCESO") && (
+        {onCancel && (order.estado === "pendiente" || order.estado === "preparando") && (
           <button onClick={() => onCancel(order.id)}
             className="flex-1 py-2 bg-red-600/10 text-red-400 rounded-xl text-sm font-medium hover:bg-red-600/20 transition-all font-body">
             Cancelar
