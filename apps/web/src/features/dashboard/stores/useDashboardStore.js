@@ -52,12 +52,8 @@ const useDashboardStore = create((set, get) => ({
       const dashboardValue = dashboardData.status === 'fulfilled' ? dashboardData.value : {};
 
       set({
-        stats: statsValue || { 
-          [periodo]: dashboardValue 
-        },
-        financial: financialValue || { 
-          [periodo]: { ingresos: dashboardValue.ingresos || 0, costos: 0, ganancia: 0, margen: 0 } 
-        },
+        stats: statsValue || dashboardValue || {},
+        financial: financialValue || {},
         inventory: inventoryValue,
         actionHistory: historyValue,
         topProducts: productsValue,
