@@ -30,7 +30,7 @@ async function calcularMetricas(inicio, fin) {
   const ingresosResult = await db.query(
     `SELECT COALESCE(SUM(total), 0) AS ingresos
      FROM pedidos
-     WHERE estado = 'COMPLETADO' AND fecha BETWEEN $1 AND $2`,
+     WHERE estado = 'entregado' AND fecha BETWEEN $1 AND $2`,
     [inicio, fin]
   );
 
@@ -39,7 +39,7 @@ async function calcularMetricas(inicio, fin) {
      FROM pedido_items pi
      JOIN productos p   ON pi.producto_id = p.id
      JOIN pedidos ped   ON pi.pedido_id   = ped.id
-     WHERE ped.estado = 'COMPLETADO'
+     WHERE ped.estado = 'entregado'
        AND ped.fecha BETWEEN $1 AND $2
        AND p.costo_produccion IS NOT NULL`,
     [inicio, fin]
@@ -48,7 +48,7 @@ async function calcularMetricas(inicio, fin) {
   const costoInventarioResult = await db.query(
     `SELECT COALESCE(SUM(cantidad * costo_unitario), 0) AS costo_inventario
      FROM stock_movimientos
-     WHERE tipo = 'ENTRADA'
+     WHERE tipo = 'entrada'
        AND fecha BETWEEN $1 AND $2
        AND costo_unitario IS NOT NULL`,
     [inicio, fin]
@@ -97,9 +97,9 @@ class ReportesService {
     const pedidosResult = await db.query(
       `SELECT
          COUNT(*)                                               AS total_pedidos,
-         COUNT(CASE WHEN estado = 'COMPLETADO'  THEN 1 END)   AS completados,
-         COUNT(CASE WHEN estado = 'EN_PROCESO'  THEN 1 END)   AS en_proceso,
-         COUNT(CASE WHEN estado = 'PENDIENTE'   THEN 1 END)   AS pendientes
+         COUNT(CASE WHEN estado = 'entregado'   THEN 1 END)   AS completados,
+         COUNT(CASE WHEN estado = 'preparando'  THEN 1 END)   AS en_proceso,
+         COUNT(CASE WHEN estado = 'pendiente'   THEN 1 END)   AS pendientes
        FROM pedidos
        WHERE empleado_id = $1 AND fecha >= $2`,
       [empleado_id, hoy]
@@ -110,7 +110,7 @@ class ReportesService {
        FROM pedido_items pi
        JOIN productos p ON pi.producto_id = p.id
        JOIN pedidos ped ON pi.pedido_id = ped.id
-       WHERE ped.estado = 'COMPLETADO' AND ped.fecha >= $1
+       WHERE ped.estado = 'entregado' AND ped.fecha >= $1
        GROUP BY p.id, p.nombre
        ORDER BY total_vendido DESC
        LIMIT 3`,

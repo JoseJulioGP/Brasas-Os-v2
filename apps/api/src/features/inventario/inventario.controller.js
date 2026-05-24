@@ -140,7 +140,7 @@ const createEntrada = async (req, res) => {
     const resultado = await inventarioService.createMovimiento({
       insumo_id,
       usuario_id: req.user.id,
-      tipo: 'ENTRADA',
+      tipo: 'entrada',
       cantidad,
       costo_unitario,
       motivo
@@ -164,7 +164,7 @@ const createSalida = async (req, res) => {
     const resultado = await inventarioService.createMovimiento({
       insumo_id,
       usuario_id: req.user.id,
-      tipo: 'SALIDA',
+      tipo: 'salida',
       cantidad,
       motivo
     });

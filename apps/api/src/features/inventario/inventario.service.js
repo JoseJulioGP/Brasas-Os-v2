@@ -178,7 +178,7 @@ async setProductoCarne(producto_id, corte_ref, kg_requeridos) {
 
       if (!insumo) throw new Error('INSUMO_NO_ENCONTRADO');
 
-      if (data.tipo === 'SALIDA' && insumo.stock_actual < data.cantidad) {
+      if (data.tipo === 'salida' && insumo.stock_actual < data.cantidad) {
         throw new Error('STOCK_INSUFICIENTE');
       }
 
@@ -189,7 +189,7 @@ async setProductoCarne(producto_id, corte_ref, kg_requeridos) {
         [data.insumo_id, data.usuario_id, data.tipo, data.cantidad, data.costo_unitario || null, data.motivo || null]
       );
 
-      const signo = data.tipo === 'ENTRADA' ? 1 : -1;
+      const signo = data.tipo === 'entrada' ? 1 : -1;
       const stockResult = await client.query(
         `UPDATE insumos SET stock_actual = stock_actual + ($1 * $2) WHERE id = $3
          RETURNING stock_actual, stock_minimo`,

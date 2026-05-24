@@ -27,7 +27,7 @@ class PedidosService {
       // Crear pedido
       const pedidoResult = await client.query(
         `INSERT INTO pedidos (empleado_id, estado, total, fecha)
-        VALUES ($1, 'PENDIENTE', $2, NOW())
+        VALUES ($1, 'pendiente', $2, NOW())
         RETURNING *`,
         [empleado_id, total]
       );
@@ -200,7 +200,7 @@ class PedidosService {
     await client.query('BEGIN');
 
     const pedidoResult = await client.query(
-      `UPDATE pedidos SET estado = 'COMPLETADO', updated_at = NOW()
+      `UPDATE pedidos SET estado = 'entregado', updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
       [id]
@@ -225,7 +225,7 @@ class PedidosService {
           [item.corte_ref]
         );
 
-        if (carneResult.rows.length === 0) continue; // carne no registrada aún, no bloquear
+        if (carneResult.rows.length === 0) continue;
 
         const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
         if (kgActual < kgADescontar) {
@@ -251,7 +251,7 @@ class PedidosService {
 
   // DELETE /pedidos/:id - Cancelar pedido (soft delete)
   async cancelPedido(id) {
-    const sql = `UPDATE pedidos SET estado = 'CANCELADO', updated_at = NOW() WHERE id = $1 RETURNING id`;
+    const sql = `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`;
     const result = await db.query(sql, [id]);
     return result.rows[0];
   }

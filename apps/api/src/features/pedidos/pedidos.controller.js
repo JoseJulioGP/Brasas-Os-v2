@@ -71,9 +71,9 @@ const updateEstado = async (req, res) => {
   const empleado_id = req.user.id;
   const rol = req.user.rol;
 
-  const estadosValidos = ['PENDIENTE', 'EN_PROCESO', 'COMPLETADO'];
+  const estadosValidos = ['pendiente', 'preparando', 'entregado'];
   if (!estadosValidos.includes(estado)) {
-    return res.status(400).json({ message: 'Estado inválido. Valores permitidos: PENDIENTE, EN_PROCESO, COMPLETADO' });
+    return res.status(400).json({ message: 'Estado inválido. Valores permitidos: pendiente, preparando, entregado' });
   }
 
   try {
@@ -85,23 +85,22 @@ const updateEstado = async (req, res) => {
     }
 
     // Fix Bug 2: bloquear transiciones desde estados finales
-    if (pedido.estado === 'CANCELADO') {
+    if (pedido.estado === 'cancelado') {
       return res.status(400).json({ message: 'No se puede cambiar el estado de un pedido cancelado' });
     }
-    if (pedido.estado === 'COMPLETADO') {
+    if (pedido.estado === 'entregado') {
       return res.status(400).json({ message: 'No se puede cambiar el estado de un pedido completado' });
     }
 
     // Validar que no se retrocede
-    const estadosOrden = { 'PENDIENTE': 0, 'EN_PROCESO': 1, 'COMPLETADO': 2 };
+    const estadosOrden = { 'pendiente': 0, 'preparando': 1, 'entregado': 2 };
     if (estadosOrden[estado] < estadosOrden[pedido.estado]) {
       return res.status(400).json({ message: 'No puedes retroceder el estado del pedido' });
     }
 
     let pedidoActualizado;
 
-    // Fix Bug 1: si el nuevo estado es COMPLETADO usar la operación atómica
-    if (estado === 'COMPLETADO') {
+    if (estado === 'entregado') {
       pedidoActualizado = await pedidosService.completarPedido(id);
     } else {
       pedidoActualizado = await pedidosService.updateEstado(id, estado);
