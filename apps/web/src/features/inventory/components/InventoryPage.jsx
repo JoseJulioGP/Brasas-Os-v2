@@ -223,6 +223,7 @@ export const InventoryPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAdd={handleAdd}
+        tipo={tab}
       />
     </div>
   );
