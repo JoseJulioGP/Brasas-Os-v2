@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaPlus, FaTimes, FaUtensils } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
+import { menuService } from "../services/menuService";
 import { MenuFilters } from "./MenuFilters";
 import { MenuTable } from "./MenuTable";
 import { MenuMobileList } from "./MenuMobileList";
@@ -28,8 +29,13 @@ export const MenuPage = () => {
     setShowModal(true);
   };
 
-  const openEdit = (item) => {
-    setEditing(item);
+  const openEdit = async (item) => {
+    try {
+      const full = await menuService.getById(item.id);
+      setEditing(full || item);
+    } catch {
+      setEditing(item);
+    }
     setShowModal(true);
   };
 
