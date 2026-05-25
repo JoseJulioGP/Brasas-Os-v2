@@ -6,10 +6,10 @@ const { verifyToken, requireRole, requireAnyRole } = require('../../shared/middl
 // === CARNES ===
 // T-30: /carnes/entrada como ruta semántica (específica antes que /:id)
 router.get('/carnes/disponibles', verifyToken, inventarioController.getCarnesDisponibles);
-router.post('/carnes/entrada', verifyToken, requireRole('JEFE'), inventarioController.createCarne);
+router.post('/carnes/entrada', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createCarne);
 router.get('/carnes', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getCarnes);
-router.post('/carnes', verifyToken, requireRole('JEFE'), inventarioController.createCarne);
-router.put('/carnes/:id', verifyToken, requireRole('JEFE'), inventarioController.updateCarne);
+router.post('/carnes', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createCarne);
+router.put('/carnes/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.updateCarne);
 
 // === PRODUCTO-CARNES (T-32) ===
 router.get('/producto-carnes/:producto_id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getProductoCarne);
