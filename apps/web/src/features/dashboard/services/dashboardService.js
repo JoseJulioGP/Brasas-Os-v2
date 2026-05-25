@@ -32,7 +32,7 @@ export const fetchFinancialSummary = async (periodo) => {
       const { data: pedidos } = await api.get("/pedidos/todos", {
         params: { fecha_inicio: fechaInicio.toISOString() },
       });
-      const completados = (pedidos || []).filter((p) => p.estado === "COMPLETADO");
+      const completados = (pedidos || []).filter((p) => p.estado === "entregado");
       const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
       return { ingresos, costos: 0, ganancia: ingresos, margen: 0, utilidad_positiva: ingresos > 0, variacion_utilidad: null };
     } catch {
@@ -47,11 +47,11 @@ export const fetchStats = async (periodo) => {
     const fechaInicio = getFechaInicio(periodo);
     const [pedidosRes, carnesRes] = await Promise.allSettled([
       api.get("/pedidos/todos", { params: { fecha_inicio: fechaInicio.toISOString() } }),
-      api.get("/inventario/carnes/consulta"),
+      api.get("/inventario/carnes"),
     ]);
     const pedidos = pedidosRes.status === "fulfilled" ? (pedidosRes.value.data || []) : [];
     const carnes  = carnesRes.status  === "fulfilled" ? (carnesRes.value.data  || []) : [];
-    const completados = pedidos.filter((p) => p.estado === "COMPLETADO");
+    const completados = pedidos.filter((p) => p.estado === "entregado");
     const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
     const stockTotal = carnes.reduce((s, c) => s + (parseFloat(c.kg_disponibles) || 0), 0);
     return {
@@ -68,7 +68,7 @@ export const fetchStats = async (periodo) => {
 // Inventario de carnes disponibles
 export const fetchInventory = async () => {
   try {
-    const { data } = await api.get("/inventario/carnes/consulta");
+    const { data } = await api.get("/inventario/carnes");
     return data || [];
   } catch {
     return [];
@@ -86,7 +86,7 @@ export const fetchTopProducts = async () => {
   } catch {
     try {
       const { data } = await api.get("/productos");
-      return (data || []).slice(0, 5).map((p) => ({ nombre: p.nombre, ventas: 0 }));
+      return ((data?.data || data || [])).slice(0, 5).map((p) => ({ nombre: p.nombre, ventas: 0 }));
     } catch {
       return [];
     }
