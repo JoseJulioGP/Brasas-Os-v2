@@ -19,6 +19,7 @@ export const RegisterPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [validationError, setValidationError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +64,7 @@ export const RegisterPage = () => {
         subtitle="Regístrate para empezar a gestionar"
       />
 
-      <ErrorAlert error={error} />
+      <ErrorAlert error={validationError || error} />
 
       <Form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
         <AuthInput
