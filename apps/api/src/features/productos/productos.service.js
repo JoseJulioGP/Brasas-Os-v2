@@ -48,12 +48,22 @@ class ProductosService {
   }
 
   async getById(id) {
-    const sql = `SELECT p.*, 
+    const sql = `SELECT p.*,
                         (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen
                  FROM productos p
                  WHERE p.id = $1 AND p.activo = true`;
     const result = await db.query(sql, [id]);
-    return result.rows[0];
+    if (!result.rows[0]) return null;
+    const producto = result.rows[0];
+    const insumosResult = await db.query(
+      `SELECT pi.insumo_id, pi.cantidad_requerida, pi.unidad, i.nombre
+       FROM producto_insumos pi
+       JOIN insumos i ON pi.insumo_id = i.id
+       WHERE pi.producto_id = $1`,
+      [id]
+    );
+    producto.insumos = insumosResult.rows;
+    return producto;
   }
 
   async getAllWithCostos() {
@@ -73,52 +83,75 @@ class ProductosService {
   }
 
   async create(data) {
-    const sql = `INSERT INTO productos (nombre, precio_venta, costo_produccion, categoria, activo)
-                 VALUES ($1, $2, $3, $4, true)
-                 RETURNING *`;
-    const result = await db.query(sql, [
-      data.nombre,
-      data.precio_venta,
-      data.costo_produccion || 0,
-      data.categoria || null
-    ]);
-    return result.rows[0];
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `INSERT INTO productos (nombre, precio_venta, costo_produccion, categoria, activo)
+         VALUES ($1, $2, $3, $4, true) RETURNING *`,
+        [data.nombre, data.precio_venta, data.costo_produccion || 0, data.categoria || null]
+      );
+      const producto = result.rows[0];
+      if (Array.isArray(data.insumos) && data.insumos.length > 0) {
+        for (const ins of data.insumos) {
+          await client.query(
+            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida, unidad)
+             VALUES ($1, $2, $3, $4)`,
+            [producto.id, ins.insumo_id, ins.cantidad_requerida, ins.unidad || null]
+          );
+        }
+      }
+      await client.query('COMMIT');
+      return this.getById(producto.id);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async update(id, data) {
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const updates = [];
+      const values = [];
+      let paramIndex = 1;
 
-    if (data.nombre !== undefined) {
-      updates.push(`nombre = $${paramIndex++}`);
-      values.push(data.nombre);
-    }
-    if (data.precio_venta !== undefined) {
-      updates.push(`precio_venta = $${paramIndex++}`);
-      values.push(data.precio_venta);
-    }
-    if (data.costo_produccion !== undefined) {
-      updates.push(`costo_produccion = $${paramIndex++}`);
-      values.push(data.costo_produccion);
-    }
-    if (data.categoria !== undefined) {
-      updates.push(`categoria = $${paramIndex++}`);
-      values.push(data.categoria);
-    }
-    if (data.activo !== undefined) {
-      updates.push(`activo = $${paramIndex++}`);
-      values.push(data.activo);
-    }
+      if (data.nombre !== undefined)          { updates.push(`nombre = $${paramIndex++}`);          values.push(data.nombre); }
+      if (data.precio_venta !== undefined)     { updates.push(`precio_venta = $${paramIndex++}`);    values.push(data.precio_venta); }
+      if (data.costo_produccion !== undefined) { updates.push(`costo_produccion = $${paramIndex++}`);values.push(data.costo_produccion); }
+      if (data.categoria !== undefined)        { updates.push(`categoria = $${paramIndex++}`);        values.push(data.categoria); }
+      if (data.activo !== undefined)           { updates.push(`activo = $${paramIndex++}`);           values.push(data.activo); }
 
-    if (updates.length === 0) {
+      if (updates.length > 0) {
+        values.push(id);
+        await client.query(
+          `UPDATE productos SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+          values
+        );
+      }
+
+      if (Array.isArray(data.insumos)) {
+        await client.query('DELETE FROM producto_insumos WHERE producto_id = $1', [id]);
+        for (const ins of data.insumos) {
+          await client.query(
+            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida, unidad)
+             VALUES ($1, $2, $3, $4)`,
+            [id, ins.insumo_id, ins.cantidad_requerida, ins.unidad || null]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
       return this.getById(id);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
-
-    values.push(id);
-    const sql = `UPDATE productos SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
-    const result = await db.query(sql, values);
-    return result.rows[0];
   }
 
   async delete(id) {
