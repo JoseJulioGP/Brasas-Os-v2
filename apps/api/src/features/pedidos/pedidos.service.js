@@ -237,6 +237,39 @@ class PedidosService {
           [kgADescontar, item.corte_ref]
         );
       }
+
+      // Descontar insumos del producto
+      const insumosResult = await client.query(
+        `SELECT insumo_id, cantidad_requerida FROM producto_insumos WHERE producto_id = $1`,
+        [item.producto_id]
+      );
+
+      for (const insumo of insumosResult.rows) {
+        const cantidadADescontar = parseFloat(insumo.cantidad_requerida) * item.cantidad;
+
+        const stockResult = await client.query(
+          'SELECT stock_actual, nombre FROM insumos WHERE id = $1 FOR UPDATE',
+          [insumo.insumo_id]
+        );
+
+        if (stockResult.rows.length === 0) continue;
+
+        const { stock_actual, nombre } = stockResult.rows[0];
+        if (parseFloat(stock_actual) < cantidadADescontar) {
+          throw new Error(`STOCK_INSUMO_INSUFICIENTE:${nombre}`);
+        }
+
+        await client.query(
+          `UPDATE insumos SET stock_actual = stock_actual - $1 WHERE id = $2`,
+          [cantidadADescontar, insumo.insumo_id]
+        );
+
+        await client.query(
+          `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, motivo)
+           VALUES ($1, NULL, 'salida', $2, 'Pedido completado')`,
+          [insumo.insumo_id, cantidadADescontar]
+        );
+      }
     }
 
       await client.query('COMMIT');

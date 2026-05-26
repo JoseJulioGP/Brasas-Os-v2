@@ -117,6 +117,12 @@ const updateEstado = async (req, res) => {
         message: `Stock insuficiente de carne: ${corte}. El pedido NO fue marcado como completado.`
       });
     }
+    if (error.message && error.message.startsWith('STOCK_INSUMO_INSUFICIENTE')) {
+      const insumo = error.message.split(':')[1];
+      return res.status(409).json({
+        message: `Stock insuficiente de insumo: ${insumo}. El pedido NO fue marcado como completado.`
+      });
+    }
     console.error('Error updating estado:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }

@@ -45,7 +45,7 @@ const getProductoById = async (req, res) => {
 };
 
 const createProducto = async (req, res) => {
-  const { nombre, precio_venta, costo_produccion, categoria } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria, insumos } = req.body;
 
   if (!nombre || precio_venta == null) {
     return res.status(400).json({ message: 'Nombre y precio son requeridos' });
@@ -56,7 +56,8 @@ const createProducto = async (req, res) => {
       nombre,
       precio_venta,
       costo_produccion,
-      categoria
+      categoria,
+      insumos
     });
     // T-16: alerta si costo >= precio, pero no bloquea la operación
     const response = { ...producto };
@@ -72,7 +73,7 @@ const createProducto = async (req, res) => {
 
 const updateProducto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio_venta, costo_produccion, categoria, activo } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria, activo, insumos } = req.body;
 
   try {
     const producto = await productosService.update(id, {
@@ -80,7 +81,8 @@ const updateProducto = async (req, res) => {
       precio_venta,
       costo_produccion,
       categoria,
-      activo
+      activo,
+      insumos
     });
     if (!producto) {
       return res.status(404).json({ message: 'Producto no encontrado' });
