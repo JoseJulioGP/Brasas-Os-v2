@@ -12,16 +12,21 @@ export const authService = {
     localStorage.setItem("brasas_user", JSON.stringify(data.user));
     return data.user;
   },
-  async getCurrentUser() {
+  getCurrentUser() {
     const stored = localStorage.getItem("brasas_user");
     if (!stored) return null;
     const token = localStorage.getItem("brasas_token");
     if (!token) return null;
     try {
-      const { data } = await api.get("/auth/me");
-      return data.user;
-    } catch {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        localStorage.removeItem("brasas_token");
+        localStorage.removeItem("brasas_user");
+        return null;
+      }
       return JSON.parse(stored);
+    } catch {
+      return null;
     }
   },
   logout() {
