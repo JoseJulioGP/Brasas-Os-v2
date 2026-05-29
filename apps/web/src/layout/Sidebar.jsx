@@ -39,7 +39,8 @@ const getNavItems = (rol) => {
   ];
 
   const empleadoItems = [
-    { path: "/empleado/pedidos", label: "Mis Pedidos", icon: FaShoppingCart },
+    { path: "/empleado/pedidos",   label: "Mis Pedidos",  icon: FaShoppingCart },
+    { path: "/empleado/historial", label: "Mi Historial", icon: FaHistory       },
   ];
 
   const settingsItem = { path: "#", label: "Configuración", icon: FaCog };

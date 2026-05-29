@@ -1,15 +1,11 @@
 import api from "../../../services/api";
 
 export const historyService = {
-  getHistory: async (params = {}) => {
-    const { data } = await api.get("/pedidos/todos", { params });
-    return data;
-  },
-
-  getHistoryByDate: async (start, end) => {
-    const { data } = await api.get("/pedidos/todos", {
-      params: { fecha_inicio: start, fecha_fin: end },
-    });
+  getHistorial: async (params = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined)
+    );
+    const { data } = await api.get("/historial", { params: clean });
     return data;
   },
 };

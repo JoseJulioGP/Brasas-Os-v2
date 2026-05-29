@@ -109,6 +109,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/empleado/historial",
+    element: (
+      <ProtectedRoute allowedRoles={["EMPLEADO"]}>
+        <HistoryPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/pedidos",
     element: (
       <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
