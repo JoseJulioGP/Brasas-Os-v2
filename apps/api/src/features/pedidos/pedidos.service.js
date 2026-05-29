@@ -3,10 +3,6 @@ const db = require('../../shared/database/db');
 class PedidosService {
   async createPedido(empleado_id, items) {
     const client = await db.pool.connect();
-<<<<<<< Updated upstream
-    
-=======
->>>>>>> Stashed changes
     try {
       await client.query('BEGIN');
 
@@ -24,13 +20,8 @@ class PedidosService {
 
       const pedidoResult = await client.query(
         `INSERT INTO pedidos (empleado_id, estado, total, fecha)
-<<<<<<< Updated upstream
         VALUES ($1, 'pendiente', $2, NOW())
         RETURNING *`,
-=======
-         VALUES ($1, 'PENDIENTE', $2, NOW())
-         RETURNING *`,
->>>>>>> Stashed changes
         [empleado_id, total]
       );
       const pedido = pedidoResult.rows[0];
@@ -139,71 +130,8 @@ class PedidosService {
     return result.rows[0];
   }
 
-<<<<<<< Updated upstream
-  // PUT /pedidos/:id - Editar pedido completo
   async updatePedido(id, items) {
     const client = await db.pool.connect();
-    
-=======
-  // Cambio de estado a COMPLETADO + descuento de carnes en una sola transacción
-  async completarPedido(id) {
-    const client = await db.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const pedidoResult = await client.query(
-        `UPDATE pedidos SET estado = 'COMPLETADO', updated_at = NOW()
-         WHERE id = $1
-         RETURNING *`,
-        [id]
-      );
-      if (pedidoResult.rows.length === 0) throw new Error('PEDIDO_NO_ENCONTRADO');
-
-      const itemsResult = await client.query(
-        `SELECT pi.producto_id, pi.cantidad,
-                pc.corte_ref, pc.kg_requeridos
-         FROM pedido_items pi
-         LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
-         WHERE pi.pedido_id = $1`,
-        [id]
-      );
-
-      for (const item of itemsResult.rows) {
-        if (item.corte_ref && item.kg_requeridos) {
-          const kgADescontar = parseFloat(item.kg_requeridos) * item.cantidad;
-
-          const carneResult = await client.query(
-            'SELECT kg_disponibles FROM carnes WHERE corte = $1 FOR UPDATE',
-            [item.corte_ref]
-          );
-
-          if (carneResult.rows.length === 0) continue;
-
-          const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
-          if (kgActual < kgADescontar) {
-            throw new Error(`STOCK_CARNE_INSUFICIENTE:${item.corte_ref}`);
-          }
-
-          await client.query(
-            `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 WHERE corte = $2`,
-            [kgADescontar, item.corte_ref]
-          );
-        }
-      }
-
-      await client.query('COMMIT');
-      return pedidoResult.rows[0];
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
-  }
-
-  async updatePedido(id, items) {
-    const client = await db.pool.connect();
->>>>>>> Stashed changes
     try {
       await client.query('BEGIN');
 
@@ -245,113 +173,98 @@ class PedidosService {
     }
   }
 
-<<<<<<< Updated upstream
   async completarPedido(id) {
-  const client = await db.pool.connect();
-  try {
-    await client.query('BEGIN');
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
 
-    const pedidoResult = await client.query(
-      `UPDATE pedidos SET estado = 'entregado', updated_at = NOW()
-       WHERE id = $1
-       RETURNING *`,
-      [id]
-    );
-    if (pedidoResult.rows.length === 0) throw new Error('PEDIDO_NO_ENCONTRADO');
+      const pedidoResult = await client.query(
+        `UPDATE pedidos SET estado = 'entregado', updated_at = NOW()
+         WHERE id = $1
+         RETURNING *`,
+        [id]
+      );
+      if (pedidoResult.rows.length === 0) throw new Error('PEDIDO_NO_ENCONTRADO');
 
-    const itemsResult = await client.query(
-      `SELECT pi.producto_id, pi.cantidad,
-              pc.corte_ref, pc.kg_requeridos
-       FROM pedido_items pi
-       LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
-       WHERE pi.pedido_id = $1`,
-      [id]
-    );
-
-    for (const item of itemsResult.rows) {
-      if (item.corte_ref && item.kg_requeridos) {
-        const kgADescontar = parseFloat(item.kg_requeridos) * item.cantidad;
-
-        const carneResult = await client.query(
-          'SELECT kg_disponibles FROM carnes WHERE corte = $1 FOR UPDATE',
-          [item.corte_ref]
-        );
-
-        if (carneResult.rows.length === 0) continue;
-
-        const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
-        if (kgActual < kgADescontar) {
-          throw new Error(`STOCK_CARNE_INSUFICIENTE:${item.corte_ref}`);
-        }
-
-        await client.query(
-          `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 WHERE corte = $2`,
-          [kgADescontar, item.corte_ref]
-        );
-      }
-
-      // Descontar insumos del producto
-      const insumosResult = await client.query(
-        `SELECT insumo_id, cantidad_requerida FROM producto_insumos WHERE producto_id = $1`,
-        [item.producto_id]
+      const itemsResult = await client.query(
+        `SELECT pi.producto_id, pi.cantidad,
+                pc.corte_ref, pc.kg_requeridos
+         FROM pedido_items pi
+         LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
+         WHERE pi.pedido_id = $1`,
+        [id]
       );
 
-      for (const insumo of insumosResult.rows) {
-        const cantidadADescontar = parseFloat(insumo.cantidad_requerida) * item.cantidad;
+      for (const item of itemsResult.rows) {
+        if (item.corte_ref && item.kg_requeridos) {
+          const kgADescontar = parseFloat(item.kg_requeridos) * item.cantidad;
 
-        const stockResult = await client.query(
-          'SELECT stock_actual, nombre FROM insumos WHERE id = $1 FOR UPDATE',
-          [insumo.insumo_id]
-        );
+          const carneResult = await client.query(
+            'SELECT kg_disponibles FROM carnes WHERE corte = $1 FOR UPDATE',
+            [item.corte_ref]
+          );
 
-        if (stockResult.rows.length === 0) continue;
+          if (carneResult.rows.length === 0) continue;
 
-        const { stock_actual, nombre } = stockResult.rows[0];
-        if (parseFloat(stock_actual) < cantidadADescontar) {
-          throw new Error(`STOCK_INSUMO_INSUFICIENTE:${nombre}`);
+          const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
+          if (kgActual < kgADescontar) {
+            throw new Error(`STOCK_CARNE_INSUFICIENTE:${item.corte_ref}`);
+          }
+
+          await client.query(
+            `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 WHERE corte = $2`,
+            [kgADescontar, item.corte_ref]
+          );
         }
 
-        await client.query(
-          `UPDATE insumos SET stock_actual = stock_actual - $1 WHERE id = $2`,
-          [cantidadADescontar, insumo.insumo_id]
+        const insumosResult = await client.query(
+          `SELECT insumo_id, cantidad_requerida FROM producto_insumos WHERE producto_id = $1`,
+          [item.producto_id]
         );
 
-        await client.query(
-          `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, motivo)
-           VALUES ($1, NULL, 'salida', $2, 'Pedido completado')`,
-          [insumo.insumo_id, cantidadADescontar]
-        );
+        for (const insumo of insumosResult.rows) {
+          const cantidadADescontar = parseFloat(insumo.cantidad_requerida) * item.cantidad;
+
+          const stockResult = await client.query(
+            'SELECT stock_actual, nombre FROM insumos WHERE id = $1 FOR UPDATE',
+            [insumo.insumo_id]
+          );
+
+          if (stockResult.rows.length === 0) continue;
+
+          const { stock_actual, nombre } = stockResult.rows[0];
+          if (parseFloat(stock_actual) < cantidadADescontar) {
+            throw new Error(`STOCK_INSUMO_INSUFICIENTE:${nombre}`);
+          }
+
+          await client.query(
+            `UPDATE insumos SET stock_actual = stock_actual - $1 WHERE id = $2`,
+            [cantidadADescontar, insumo.insumo_id]
+          );
+
+          await client.query(
+            `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, motivo)
+             VALUES ($1, NULL, 'salida', $2, 'Pedido completado')`,
+            [insumo.insumo_id, cantidadADescontar]
+          );
+        }
       }
-    }
 
       await client.query('COMMIT');
       return pedidoResult.rows[0];
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
-    }   finally {
+    } finally {
       client.release();
     }
   }
 
-  // DELETE /pedidos/:id - Cancelar pedido (soft delete)
-=======
->>>>>>> Stashed changes
   async cancelPedido(id) {
-<<<<<<< Updated upstream
     const sql = `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`;
     const result = await db.query(sql, [id]);
     return result.rows[0];
   }
-
-=======
-    const result = await db.query(
-      `UPDATE pedidos SET estado = 'CANCELADO', updated_at = NOW() WHERE id = $1 RETURNING id`,
-      [id]
-    );
-    return result.rows[0];
-  }
->>>>>>> Stashed changes
 }
 
 module.exports = new PedidosService();
