@@ -1,4 +1,6 @@
 const db = require('../../shared/database/db');
+const historialService = require('../historial/historial.service');
+const { TIPOS_ACCION, ENTIDADES } = require('../../shared/constants/audit');
 
 class PedidosService {
   async createPedido(empleado_id, items) {
@@ -251,7 +253,16 @@ class PedidosService {
       }
 
       await client.query('COMMIT');
-      return pedidoResult.rows[0];
+      const pedidoCompletado = pedidoResult.rows[0];
+      historialService.registrar({
+        usuario_id:  null,
+        rol_id:      null,
+        tipo_accion: TIPOS_ACCION.COMPLETAR,
+        entidad:     ENTIDADES.PEDIDOS,
+        entidad_id:  id,
+        descripcion: `Pedido completado [${id}]`,
+      }).catch(() => {});
+      return pedidoCompletado;
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -263,6 +274,16 @@ class PedidosService {
   async cancelPedido(id) {
     const sql = `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`;
     const result = await db.query(sql, [id]);
+    if (result.rows[0]) {
+      historialService.registrar({
+        usuario_id:  null,
+        rol_id:      null,
+        tipo_accion: TIPOS_ACCION.CANCELAR,
+        entidad:     ENTIDADES.PEDIDOS,
+        entidad_id:  id,
+        descripcion: `Pedido cancelado [${id}]`,
+      }).catch(() => {});
+    }
     return result.rows[0];
   }
 }

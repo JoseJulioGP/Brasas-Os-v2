@@ -1,6 +1,8 @@
 const db = require("../../shared/database/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const historialService = require("../historial/historial.service");
+const { TIPOS_ACCION, ENTIDADES } = require("../../shared/constants/audit");
 /**
  * AuthService - SRP: Única responsabilidad de autenticación
  * No usa tabla sesiones (stateless JWT)
@@ -29,10 +31,11 @@ class AuthService {
       // 3. Generar JWT (stateless)
       const token = jwt.sign(
         {
-          id: usuario.id,
-          rol: usuario.rol_nombre,
-          email: usuario.email,
-          iat: Math.floor(Date.now() / 1000),
+          id:     usuario.id,
+          rol:    usuario.rol_nombre,
+          rol_id: usuario.rol_id,
+          email:  usuario.email,
+          iat:    Math.floor(Date.now() / 1000),
         },
         process.env.JWT_SECRET,
         { expiresIn: "30m" },
@@ -42,13 +45,22 @@ class AuthService {
         "UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1",
         [usuario.id],
       );
+      // 5. Registrar LOGIN en historial
+      historialService.registrar({
+        usuario_id:  usuario.id,
+        rol_id:      usuario.rol_id,
+        tipo_accion: TIPOS_ACCION.LOGIN,
+        entidad:     ENTIDADES.AUTH,
+        entidad_id:  usuario.id,
+        descripcion: `LOGIN de ${usuario.email}`,
+      }).catch(() => {});
       return {
         token,
         user: {
-          id: usuario.id,
+          id:    usuario.id,
           nombre: usuario.nombre,
-          email: usuario.email,
-          rol: usuario.rol_nombre,
+          email:  usuario.email,
+          rol:    usuario.rol_nombre,
         },
       };
     } catch (error) {
@@ -91,10 +103,11 @@ class AuthService {
       // 5. Generar JWT
       const token = jwt.sign(
         {
-          id: usuario.id,
-          rol: usuario.rol_nombre,
-          email: usuario.email,
-          iat: Math.floor(Date.now() / 1000),
+          id:     usuario.id,
+          rol:    usuario.rol_nombre,
+          rol_id: usuario.rol_id,
+          email:  usuario.email,
+          iat:    Math.floor(Date.now() / 1000),
         },
         process.env.JWT_SECRET,
         { expiresIn: "30m" },
