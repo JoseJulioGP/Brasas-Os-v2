@@ -38,4 +38,8 @@ const register = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
-module.exports = { login, register };
+const me = (req, res) => {
+    res.status(200).json({ user: req.user });
+};
+
+module.exports = { login, register, me };

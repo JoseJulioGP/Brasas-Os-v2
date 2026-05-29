@@ -56,7 +56,7 @@ class ProductosService {
     if (!result.rows[0]) return null;
     const producto = result.rows[0];
     const insumosResult = await db.query(
-      `SELECT pi.insumo_id, pi.cantidad_requerida, pi.unidad, i.nombre
+      `SELECT pi.insumo_id, pi.cantidad_requerida, i.nombre, i.unidad_medida
        FROM producto_insumos pi
        JOIN insumos i ON pi.insumo_id = i.id
        WHERE pi.producto_id = $1`,
@@ -95,9 +95,9 @@ class ProductosService {
       if (Array.isArray(data.insumos) && data.insumos.length > 0) {
         for (const ins of data.insumos) {
           await client.query(
-            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida, unidad)
-             VALUES ($1, $2, $3, $4)`,
-            [producto.id, ins.insumo_id, ins.cantidad_requerida, ins.unidad || null]
+            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida)
+             VALUES ($1, $2, $3)`,
+            [producto.id, ins.insumo_id, ins.cantidad_requerida]
           );
         }
       }
