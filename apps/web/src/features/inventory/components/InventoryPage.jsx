@@ -4,7 +4,6 @@ import {
   FaBox,
   FaSearch,
   FaPlus,
-  FaDrumstickBite,
   FaArrowDown,
   FaArrowUp,
 } from "react-icons/fa";
@@ -13,9 +12,8 @@ import InventoryCard from "./InventoryCard";
 import InventoryModal from "./InventoryModal";
 
 const TABS = [
-  { id: "carnes", label: "Carnes", icon: FaDrumstickBite },
-  { id: "insumos", label: "Insumos", icon: FiPackage },
-  { id: "movimientos", label: "Movimientos", icon: FiRefreshCw },
+  { id: "insumos",     label: "Insumos",     icon: FiPackage },
+  { id: "movimientos", label: "Movimientos",  icon: FiRefreshCw },
 ];
 
 const Spinner = () => (
@@ -47,29 +45,28 @@ const MovimientosTable = ({ movimientos }) => {
           <div className="flex items-center gap-3">
             <div
               className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                mov.tipo === "ENTRADA"
+                mov.tipo === "entrada"
                   ? "bg-green-500/10 text-green-400"
                   : "bg-red-500/10 text-red-400"
               }`}
             >
-              {mov.tipo === "ENTRADA" ? <FaArrowDown /> : <FaArrowUp />}
+              {mov.tipo === "entrada" ? <FaArrowDown /> : <FaArrowUp />}
             </div>
             <div>
               <p className="text-sm font-medium text-[#f5f0eb] font-body">
-                {mov.producto_nombre || "Producto"}
+                {mov.insumo_nombre || "Insumo"}
               </p>
               <p className="text-xs text-white/30 font-body">
-                {mov.tipo} · {mov.cantidad} {mov.unidad || ""}
+                {mov.tipo} · {mov.cantidad} {mov.unidad_medida || ""}
               </p>
             </div>
           </div>
           <div className="text-right">
             <p className="text-xs text-white/40 font-body">
-              {mov.fecha
-                ? new Date(mov.fecha).toLocaleDateString("es-CO")
+              {mov.created_at
+                ? new Date(mov.created_at).toLocaleDateString("es-CO")
                 : ""}
             </p>
-            <p className="text-xs text-white/30 font-body">{mov.usuario_nombre || ""}</p>
           </div>
         </div>
       ))}
@@ -79,56 +76,41 @@ const MovimientosTable = ({ movimientos }) => {
 
 export const InventoryPage = () => {
   const {
-    carnes,
     insumos,
     movimientos,
     isLoading,
-    fetchAll,
+    fetchInsumos,
     fetchMovimientos,
-    addCarne,
     addInsumo,
   } = useInventoryStore();
 
-  const [tab, setTab] = useState("carnes");
+  const [tab, setTab] = useState("insumos");
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    fetchAll();
-  }, []);
+    fetchInsumos();
+  }, [fetchInsumos]);
 
   useEffect(() => {
     if (tab === "movimientos") {
       fetchMovimientos();
     }
-  }, [tab]);
-
-  const filteredCarnes = (carnes || []).filter((i) =>
-    i.nombre?.toLowerCase().includes(search.toLowerCase())
-  );
+  }, [tab, fetchMovimientos]);
 
   const filteredInsumos = (insumos || []).filter((i) =>
     i.nombre?.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleAdd = async (newItem) => {
-    if (newItem.categoria === "carnes") {
-      await addCarne({
-        corte: newItem.nombre,
-        kg_comprados: Number(newItem.cantidad),
-        kg_disponibles: Number(newItem.cantidad),
-        precio_por_kg: newItem.precio_por_kg || 0,
-        proveedor: null,
-      });
-    } else {
-      await addInsumo({
-        nombre: newItem.nombre,
-        categoria: newItem.categoria,
-        unidad_medida: newItem.unidad,
-        stock_actual: Number(newItem.cantidad),
-        stock_minimo: Number(newItem.stockMinimo) || 0,
-      });
-    }
+    await addInsumo({
+      nombre:              newItem.nombre,
+      tipo:                newItem.tipo,
+      unidad_medida:       newItem.unidad_medida,
+      stock_actual:        newItem.stock_actual,
+      stock_minimo:        newItem.stock_minimo,
+      costo_unitario_prom: newItem.costo_unitario_prom,
+    });
   };
 
   const activeTab = TABS.find((t) => t.id === tab);
@@ -151,16 +133,16 @@ export const InventoryPage = () => {
                 Inventario
               </h1>
               <p className="text-sm text-white/40 font-body">
-                Control de carnes, insumos y suministros
+                Control de insumos y suministros
               </p>
             </div>
           </div>
-          {tab !== "movimientos" && (
+          {tab === "insumos" && (
             <button
               onClick={() => setShowModal(true)}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body"
             >
-              <FaPlus /> Agregar {tab === "carnes" ? "Carne" : "Insumo"}
+              <FaPlus /> Agregar Insumo
             </button>
           )}
         </div>
@@ -188,54 +170,46 @@ export const InventoryPage = () => {
         </div>
 
         {/* Search */}
-        <div className="relative max-w-md mb-6 animate-fade-in-up opacity-0 stagger-2">
-          <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
-          <input
-            type="text"
-            placeholder={`Buscar ${activeTab?.label?.toLowerCase() || "producto"}...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body"
-          />
-        </div>
+        {tab === "insumos" && (
+          <div className="relative max-w-md mb-6 animate-fade-in-up opacity-0 stagger-2">
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
+            <input
+              type="text"
+              placeholder={`Buscar ${activeTab?.label?.toLowerCase() || "insumo"}...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body"
+            />
+          </div>
+        )}
 
         {/* Content */}
-        {isLoading && (tab !== "movimientos") ? (
+        {isLoading ? (
           <Spinner />
-        ) : tab === "carnes" ? filteredCarnes.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
-            <FaDrumstickBite className="text-4xl text-white/20 mx-auto mb-4" />
-            <p className="text-white/50 font-body">No hay carnes registradas</p>
-          </div>
+        ) : tab === "insumos" ? (
+          filteredInsumos.length === 0 ? (
+            <div className="glass rounded-2xl p-12 text-center">
+              <FiPackage className="text-4xl text-white/20 mx-auto mb-4" />
+              <p className="text-white/50 font-body">No hay insumos registrados</p>
+            </div>
+          ) : (
+            <div className="space-y-3 animate-fade-in-up opacity-0 stagger-3">
+              {filteredInsumos.map((item) => (
+                <InventoryCard key={item.id} item={item} />
+              ))}
+            </div>
+          )
         ) : (
-          <div className="space-y-3 animate-fade-in-up opacity-0 stagger-3">
-            {filteredCarnes.map((item) => (
-              <InventoryCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : tab === "insumos" ? filteredInsumos.length === 0 ? (
-          <div className="glass rounded-2xl p-12 text-center">
-            <FiPackage className="text-4xl text-white/20 mx-auto mb-4" />
-            <p className="text-white/50 font-body">No hay insumos registrados</p>
-          </div>
-        ) : (
-          <div className="space-y-3 animate-fade-in-up opacity-0 stagger-3">
-            {filteredInsumos.map((item) => (
-              <InventoryCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : tab === "movimientos" ? (
           <div className="animate-fade-in-up opacity-0 stagger-3">
             <MovimientosTable movimientos={movimientos || []} />
           </div>
-        ) : null}
+        )}
       </div>
 
       <InventoryModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAdd={handleAdd}
-        tipo={tab}
       />
     </div>
   );
