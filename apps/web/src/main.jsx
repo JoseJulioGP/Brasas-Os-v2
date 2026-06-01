@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { HeroUIProvider } from "@heroui/react";
+import { HeroUIProvider } from "./lib/heroui-shim";
 import "./index.css";
 import { App } from "./App";
 
