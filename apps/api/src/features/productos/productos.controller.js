@@ -1,11 +1,9 @@
 const productosService = require('./productos.service');
 
-// SRP: El controlador solo maneja HTTP, extrae datos y valida
-// La lógica de negocio está en el service
-
 const getProductos = async (req, res) => {
   try {
-    const productos = await productosService.getAll();
+    const { categoria_id, limit, offset } = req.query;
+    const productos = await productosService.getAll({ categoria_id, limit, offset });
     res.status(200).json(productos);
   } catch (error) {
     console.error('Error getting productos:', error);
@@ -17,9 +15,7 @@ const getProductoById = async (req, res) => {
   const { id } = req.params;
   try {
     const producto = await productosService.getById(id);
-    if (!producto) {
-      return res.status(404).json({ message: 'Producto no encontrado' });
-    }
+    if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json(producto);
   } catch (error) {
     console.error('Error getting producto:', error);
@@ -28,27 +24,21 @@ const getProductoById = async (req, res) => {
 };
 
 const createProducto = async (req, res) => {
-  const { nombre, precio_venta, costo_produccion, categoria, insumos } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria_id, insumos } = req.body;
 
   if (!nombre || !precio_venta) {
-    return res.status(400).json({ message: 'Nombre y precio son requeridos' });
+    return res.status(400).json({ message: 'Nombre y precio de venta son requeridos' });
   }
-
-  // Validación de negocio: costo no debe superar precio
-  if (costo_produccion && precio_venta && costo_produccion >= precio_venta) {
-    return res.status(400).json({ 
+  if (costo_produccion && precio_venta && Number(costo_produccion) >= Number(precio_venta)) {
+    return res.status(400).json({
       message: 'El costo de producción no puede ser mayor o igual al precio de venta',
-      warning: true
+      warning: true,
     });
   }
 
   try {
-    const producto = await productosService.create({ 
-      nombre, 
-      precio_venta, 
-      costo_produccion, 
-      categoria,
-      insumos
+    const producto = await productosService.create({
+      nombre, precio_venta, costo_produccion, categoria_id, insumos,
     });
     res.status(201).json(producto);
   } catch (error) {
@@ -59,28 +49,20 @@ const createProducto = async (req, res) => {
 
 const updateProducto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio_venta, costo_produccion, categoria, activo, insumos } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos } = req.body;
 
-  // Validación de negocio
-  if (costo_produccion && precio_venta && costo_produccion >= precio_venta) {
-    return res.status(400).json({ 
+  if (costo_produccion && precio_venta && Number(costo_produccion) >= Number(precio_venta)) {
+    return res.status(400).json({
       message: 'El costo de producción no puede ser mayor o igual al precio de venta',
-      warning: true
+      warning: true,
     });
   }
 
   try {
-    const producto = await productosService.update(id, { 
-      nombre, 
-      precio_venta, 
-      costo_produccion, 
-      categoria, 
-      activo,
-      insumos
+    const producto = await productosService.update(id, {
+      nombre, precio_venta, costo_produccion, categoria_id, activo, insumos,
     });
-    if (!producto) {
-      return res.status(404).json({ message: 'Producto no encontrado' });
-    }
+    if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json(producto);
   } catch (error) {
     console.error('Error updating producto:', error);
@@ -92,9 +74,7 @@ const deleteProducto = async (req, res) => {
   const { id } = req.params;
   try {
     const resultado = await productosService.delete(id);
-    if (!resultado) {
-      return res.status(404).json({ message: 'Producto no encontrado' });
-    }
+    if (!resultado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('Error deleting producto:', error);
@@ -112,11 +92,22 @@ const getProductosConCostos = async (req, res) => {
   }
 };
 
+const getCategorias = async (req, res) => {
+  try {
+    const categorias = await productosService.getCategorias();
+    res.status(200).json(categorias);
+  } catch (error) {
+    console.error('Error getting categorias:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
 module.exports = {
   getProductos,
   getProductoById,
   createProducto,
   updateProducto,
   deleteProducto,
-  getProductosConCostos
+  getProductosConCostos,
+  getCategorias,
 };
