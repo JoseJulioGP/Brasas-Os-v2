@@ -1,53 +1,32 @@
 const db = require('../../shared/database/db');
 
 class HistorialRepository {
-  async insert({ usuario_id, rol_id, tipo_accion, entidad, entidad_id, descripcion }) {
+  async insert({ usuario_id, local_id, entidad, entidad_id, accion, detalle }) {
     const sql = `
-      INSERT INTO historial (usuario_id, rol_id, tipo_accion, entidad, entidad_id, descripcion, fecha)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      RETURNING *
+      INSERT INTO historial (usuario_id, local_id, entidad, entidad_id, accion, detalle, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *
     `;
     const result = await db.query(sql, [
-<<<<<<< HEAD
-      usuario_id  || null,
-      rol_id      || null,
-      tipo_accion || null,
-      entidad     || null,
-      entidad_id  ? String(entidad_id) : null,
-=======
       usuario_id || null,
-      rol_id     || null,
-      tipo_accion || null,
+      local_id   || null,
       entidad    || null,
-      entidad_id ? String(entidad_id) : null,
->>>>>>> feature/frontend
-      descripcion || null,
+      this._toUuidOrNull(entidad_id),
+      accion     || null,
+      detalle    ? JSON.stringify(detalle) : null,
     ]);
     return result.rows[0];
   }
 
-  async findAll({
-    usuario_id,
-    rol,
-    tipo_accion,
-    entidad,
-    fecha_inicio,
-    fecha_fin,
-    page  = 1,
-    limit = 20,
-    entidades_whitelist,
-  } = {}) {
+  async findAll({ usuario_id, accion, entidad, fecha_inicio, fecha_fin, page = 1, limit = 20, entidades_whitelist } = {}) {
     const values = [];
     let idx = 1;
     const conditions = [];
 
-<<<<<<< HEAD
-    if (usuario_id)        { conditions.push(`h.usuario_id = $${idx++}`);  values.push(usuario_id); }
-    if (rol)               { conditions.push(`r.nombre = $${idx++}`);       values.push(rol); }
-    if (tipo_accion)       { conditions.push(`h.tipo_accion = $${idx++}`);  values.push(tipo_accion); }
-    if (entidad)           { conditions.push(`h.entidad = $${idx++}`);      values.push(entidad); }
-    if (fecha_inicio)      { conditions.push(`h.fecha >= $${idx++}`);       values.push(fecha_inicio); }
-    if (fecha_fin)         { conditions.push(`h.fecha <= $${idx++}`);       values.push(fecha_fin); }
+    if (usuario_id)  { conditions.push(`h.usuario_id = $${idx++}`); values.push(usuario_id); }
+    if (accion)      { conditions.push(`h.accion = $${idx++}`);      values.push(accion); }
+    if (entidad)     { conditions.push(`h.entidad = $${idx++}`);     values.push(entidad); }
+    if (fecha_inicio){ conditions.push(`h.created_at >= $${idx++}`); values.push(fecha_inicio); }
+    if (fecha_fin)   { conditions.push(`h.created_at <= $${idx++}`); values.push(fecha_fin); }
     if (entidades_whitelist?.length) {
       const ph = entidades_whitelist.map(() => `$${idx++}`).join(', ');
       conditions.push(`h.entidad IN (${ph})`);
@@ -55,64 +34,27 @@ class HistorialRepository {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const base  = `
-=======
-    if (usuario_id) {
-      conditions.push(`h.usuario_id = $${idx++}`);
-      values.push(usuario_id);
-    }
-    if (rol) {
-      conditions.push(`r.nombre = $${idx++}`);
-      values.push(rol);
-    }
-    if (tipo_accion) {
-      conditions.push(`h.tipo_accion = $${idx++}`);
-      values.push(tipo_accion);
-    }
-    if (entidad) {
-      conditions.push(`h.entidad = $${idx++}`);
-      values.push(entidad);
-    }
-    if (fecha_inicio) {
-      conditions.push(`h.fecha >= $${idx++}`);
-      values.push(fecha_inicio);
-    }
-    if (fecha_fin) {
-      conditions.push(`h.fecha <= $${idx++}`);
-      values.push(fecha_fin);
-    }
-    if (entidades_whitelist && entidades_whitelist.length > 0) {
-      const placeholders = entidades_whitelist.map(() => `$${idx++}`).join(', ');
-      conditions.push(`h.entidad IN (${placeholders})`);
-      values.push(...entidades_whitelist);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const base = `
->>>>>>> feature/frontend
-      FROM historial h
-      LEFT JOIN usuarios u ON h.usuario_id = u.id
-      LEFT JOIN roles    r ON h.rol_id     = r.id
-      ${where}
-    `;
+    const base  = `FROM historial h LEFT JOIN usuarios u ON h.usuario_id = u.id ${where}`;
 
     const countResult = await db.query(`SELECT COUNT(*) AS total ${base}`, values);
     const total = parseInt(countResult.rows[0].total);
 
-    const offset  = (parseInt(page) - 1) * parseInt(limit);
+    const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataSql = `
-      SELECT h.*,
-             u.nombre AS usuario_nombre,
-             r.nombre AS rol_nombre
-      ${base}
-      ORDER BY h.fecha DESC
+      SELECT h.id, h.usuario_id, h.entidad, h.entidad_id, h.accion, h.detalle, h.created_at,
+             u.nombre AS usuario_nombre
+      ${base} ORDER BY h.created_at DESC
       LIMIT $${idx++} OFFSET $${idx++}
     `;
     values.push(parseInt(limit), offset);
-
     const dataResult = await db.query(dataSql, values);
     return { data: dataResult.rows, total };
+  }
+
+  _toUuidOrNull(value) {
+    if (!value) return null;
+    const r = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return r.test(String(value)) ? String(value) : null;
   }
 }
 
