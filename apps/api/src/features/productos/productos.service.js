@@ -1,83 +1,76 @@
 const db = require('../../shared/database/db');
 
 class ProductosService {
-  async getAll(filtros = {}) {
-    let sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion,
-                      p.categoria, p.activo, p.created_at,
-                      (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen
-               FROM productos p
-               WHERE p.activo = true`;
-    const values = [];
-    let paramIndex = 1;
 
-    if (filtros.categoria) {
-      sql += ` AND p.categoria = $${paramIndex++}`;
-      values.push(filtros.categoria);
+  async getAll(filtros = {}) {
+    let sql = `
+      SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion,
+             COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion, 0)) AS margen,
+             p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at,
+             c.nombre AS categoria
+      FROM productos p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      WHERE p.activo = true
+    `;
+    const values = [];
+    let idx = 1;
+
+    if (filtros.categoria_id) {
+      sql += ` AND p.categoria_id = $${idx++}`;
+      values.push(filtros.categoria_id);
     }
 
     sql += ` ORDER BY p.nombre`;
 
-    if (filtros.limit) {
-      sql += ` LIMIT $${paramIndex++}`;
-      values.push(parseInt(filtros.limit));
-    }
+    if (filtros.limit)  { sql += ` LIMIT $${idx++}`;  values.push(parseInt(filtros.limit)); }
+    if (filtros.offset) { sql += ` OFFSET $${idx++}`; values.push(parseInt(filtros.offset)); }
 
-    if (filtros.offset) {
-      sql += ` OFFSET $${paramIndex++}`;
-      values.push(parseInt(filtros.offset));
-    }
-
-    const result = await db.query(sql, values);
-
-    let countSql = `SELECT COUNT(*) as total FROM productos WHERE activo = true`;
-    const countValues = [];
-    if (filtros.categoria) {
-      countSql += ` AND categoria = $1`;
-      countValues.push(filtros.categoria);
-    }
-    const countResult = await db.query(countSql, countValues);
+    const [rows, count] = await Promise.all([
+      db.query(sql, values),
+      db.query(
+        `SELECT COUNT(*) AS total FROM productos WHERE activo = true${filtros.categoria_id ? ' AND categoria_id = $1' : ''}`,
+        filtros.categoria_id ? [filtros.categoria_id] : []
+      )
+    ]);
 
     return {
-      data: result.rows,
-      total: parseInt(countResult.rows[0].total),
-      filtros: {
-        categoria: filtros.categoria || null,
-        limite: filtros.limit || null
-      }
+      data: rows.rows,
+      total: parseInt(count.rows[0].total),
     };
   }
 
   async getById(id) {
-    const sql = `SELECT p.*,
-                        (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen
-                 FROM productos p
-                 WHERE p.id = $1 AND p.activo = true`;
+    const sql = `
+      SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion,
+             COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion, 0)) AS margen,
+             p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at,
+             c.nombre AS categoria
+      FROM productos p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      WHERE p.id = $1 AND p.activo = true
+    `;
     const result = await db.query(sql, [id]);
     if (!result.rows[0]) return null;
     const producto = result.rows[0];
-    const insumosResult = await db.query(
-      `SELECT pi.insumo_id, pi.cantidad_requerida, i.nombre, i.unidad_medida
-       FROM producto_insumos pi
-       JOIN insumos i ON pi.insumo_id = i.id
-       WHERE pi.producto_id = $1`,
-      [id]
-    );
-    producto.insumos = insumosResult.rows;
+    producto.insumos = await this._getInsumosByProductoId(id);
     return producto;
   }
 
   async getAllWithCostos() {
-    const sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, 
-                        p.categoria, p.activo, p.created_at,
-                        (p.precio_venta - COALESCE(p.costo_produccion, 0)) as margen,
-                        CASE 
-                          WHEN p.costo_produccion > 0 
-                          THEN ROUND((p.precio_venta - p.costo_produccion) / p.costo_produccion * 100, 2)
-                          ELSE 0 
-                        END as porcentaje_margen
-                 FROM productos p
-                 WHERE p.activo = true
-                 ORDER BY margen DESC`;
+    const sql = `
+      SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion,
+             COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion, 0)) AS margen,
+             CASE
+               WHEN COALESCE(p.costo_produccion, 0) > 0
+               THEN ROUND((p.precio_venta - p.costo_produccion) / p.costo_produccion * 100, 2)
+               ELSE 0
+             END AS porcentaje_margen,
+             p.activo, p.categoria_id, c.nombre AS categoria
+      FROM productos p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      WHERE p.activo = true
+      ORDER BY margen DESC
+    `;
     const result = await db.query(sql);
     return result.rows;
   }
@@ -87,16 +80,16 @@ class ProductosService {
     try {
       await client.query('BEGIN');
       const result = await client.query(
-        `INSERT INTO productos (nombre, precio_venta, costo_produccion, categoria, activo)
-         VALUES ($1, $2, $3, $4, true) RETURNING *`,
-        [data.nombre, data.precio_venta, data.costo_produccion || 0, data.categoria || null]
+        `INSERT INTO productos (local_id, categoria_id, nombre, precio_venta, costo_produccion, activo, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING *`,
+        [data.local_id || null, data.categoria_id || null, data.nombre, data.precio_venta, data.costo_produccion || 0]
       );
       const producto = result.rows[0];
+
       if (Array.isArray(data.insumos) && data.insumos.length > 0) {
         for (const ins of data.insumos) {
           await client.query(
-            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida)
-             VALUES ($1, $2, $3)`,
+            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`,
             [producto.id, ins.insumo_id, ins.cantidad_requerida]
           );
         }
@@ -115,35 +108,31 @@ class ProductosService {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
-      const updates = [];
-      const values = [];
-      let paramIndex = 1;
+      const campos = [];
+      const valores = [];
+      let i = 1;
 
-      if (data.nombre !== undefined)          { updates.push(`nombre = $${paramIndex++}`);          values.push(data.nombre); }
-      if (data.precio_venta !== undefined)     { updates.push(`precio_venta = $${paramIndex++}`);    values.push(data.precio_venta); }
-      if (data.costo_produccion !== undefined) { updates.push(`costo_produccion = $${paramIndex++}`);values.push(data.costo_produccion); }
-      if (data.categoria !== undefined)        { updates.push(`categoria = $${paramIndex++}`);        values.push(data.categoria); }
-      if (data.activo !== undefined)           { updates.push(`activo = $${paramIndex++}`);           values.push(data.activo); }
+      if (data.nombre           !== undefined) { campos.push(`nombre = $${i++}`);           valores.push(data.nombre); }
+      if (data.precio_venta     !== undefined) { campos.push(`precio_venta = $${i++}`);     valores.push(data.precio_venta); }
+      if (data.costo_produccion !== undefined) { campos.push(`costo_produccion = $${i++}`); valores.push(data.costo_produccion); }
+      if (data.categoria_id     !== undefined) { campos.push(`categoria_id = $${i++}`);     valores.push(data.categoria_id); }
+      if (data.activo           !== undefined) { campos.push(`activo = $${i++}`);            valores.push(data.activo); }
 
-      if (updates.length > 0) {
-        values.push(id);
-        await client.query(
-          `UPDATE productos SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
-          values
-        );
+      if (campos.length > 0) {
+        campos.push(`updated_at = NOW()`);
+        valores.push(id);
+        await client.query(`UPDATE productos SET ${campos.join(', ')} WHERE id = $${i}`, valores);
       }
 
       if (Array.isArray(data.insumos)) {
         await client.query('DELETE FROM producto_insumos WHERE producto_id = $1', [id]);
         for (const ins of data.insumos) {
           await client.query(
-            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida, unidad)
-             VALUES ($1, $2, $3, $4)`,
-            [id, ins.insumo_id, ins.cantidad_requerida, ins.unidad || null]
+            `INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`,
+            [id, ins.insumo_id, ins.cantidad_requerida]
           );
         }
       }
-
       await client.query('COMMIT');
       return this.getById(id);
     } catch (err) {
@@ -155,27 +144,41 @@ class ProductosService {
   }
 
   async delete(id) {
-    const sql = `UPDATE productos SET activo = false WHERE id = $1 RETURNING id`;
-    const result = await db.query(sql, [id]);
+    const result = await db.query(
+      `UPDATE productos SET activo = false, updated_at = NOW() WHERE id = $1 RETURNING id`,
+      [id]
+    );
     return result.rows[0];
   }
 
   async getCategorias() {
-    const sql = `SELECT DISTINCT categoria FROM productos WHERE categoria IS NOT NULL AND activo = true ORDER BY categoria`;
+    const sql = `SELECT id, nombre FROM categorias WHERE activo = true ORDER BY nombre`;
     const result = await db.query(sql);
-    return result.rows.map(row => row.categoria);
+    return result.rows;
   }
 
   async getEstadisticas() {
-    const sql = `SELECT 
-                   COUNT(*) as total_productos,
-                   AVG(precio_venta) as promedio_precio,
-                   SUM(precio_venta * COALESCE(stock_actual, 0)) as valor_total_stock,
-                   MAX(precio_venta) as precio_maximo,
-                   MIN(precio_venta) as precio_minimo
-                 FROM productos WHERE activo = true`;
+    const sql = `
+      SELECT COUNT(*) AS total_productos,
+             AVG(precio_venta) AS promedio_precio,
+             MAX(precio_venta) AS precio_maximo,
+             MIN(precio_venta) AS precio_minimo
+      FROM productos WHERE activo = true
+    `;
     const result = await db.query(sql);
     return result.rows[0];
+  }
+
+  async _getInsumosByProductoId(productoId) {
+    const sql = `
+      SELECT pi.insumo_id, pi.cantidad_requerida, i.nombre, i.unidad_medida
+      FROM producto_insumos pi
+      JOIN insumos i ON pi.insumo_id = i.id
+      WHERE pi.producto_id = $1
+      ORDER BY i.nombre
+    `;
+    const result = await db.query(sql, [productoId]);
+    return result.rows;
   }
 }
 

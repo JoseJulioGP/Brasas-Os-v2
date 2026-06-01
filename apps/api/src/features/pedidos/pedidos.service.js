@@ -1,6 +1,9 @@
 const db = require('../../shared/database/db');
+const historialService = require('../historial/historial.service');
+const { TIPOS_ACCION, ENTIDADES } = require('../../shared/constants/audit');
 
 class PedidosService {
+
   async createPedido(empleado_id, items) {
     const client = await db.pool.connect();
     try {
@@ -8,33 +11,31 @@ class PedidosService {
 
       let total = 0;
       for (const item of items) {
-        const producto = await client.query(
+        const prod = await client.query(
           'SELECT precio_venta FROM productos WHERE id = $1 AND activo = true',
           [item.producto_id]
         );
-        if (producto.rows.length === 0) {
-          throw new Error(`Producto ${item.producto_id} no encontrado`);
-        }
-        total += producto.rows[0].precio_venta * item.cantidad;
+        if (prod.rows.length === 0) throw new Error(`Producto ${item.producto_id} no encontrado`);
+        total += parseFloat(prod.rows[0].precio_venta) * item.cantidad;
       }
 
       const pedidoResult = await client.query(
-        `INSERT INTO pedidos (empleado_id, estado, total, fecha)
-        VALUES ($1, 'pendiente', $2, NOW())
-        RETURNING *`,
+        `INSERT INTO pedidos (empleado_id, estado, total, created_at, updated_at)
+         VALUES ($1, 'pendiente', $2, NOW(), NOW()) RETURNING *`,
         [empleado_id, total]
       );
       const pedido = pedidoResult.rows[0];
 
       for (const item of items) {
-        const producto = await client.query(
+        const prod = await client.query(
           'SELECT precio_venta FROM productos WHERE id = $1',
           [item.producto_id]
         );
+        const precio = parseFloat(prod.rows[0].precio_venta);
         await client.query(
-          `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario)
-           VALUES ($1, $2, $3, $4)`,
-          [pedido.id, item.producto_id, item.cantidad, producto.rows[0].precio_venta]
+          `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [pedido.id, item.producto_id, item.cantidad, precio, precio * item.cantidad]
         );
       }
 
@@ -50,17 +51,16 @@ class PedidosService {
 
   async getPedidoById(id) {
     const pedidoResult = await db.query(
-      `SELECT p.*, u.nombre as empleado_nombre
+      `SELECT p.*, u.nombre AS empleado_nombre
        FROM pedidos p
        LEFT JOIN usuarios u ON p.empleado_id = u.id
        WHERE p.id = $1`,
       [id]
     );
     if (pedidoResult.rows.length === 0) return null;
-
     const pedido = pedidoResult.rows[0];
     const itemsResult = await db.query(
-      `SELECT pi.*, pr.nombre as producto_nombre
+      `SELECT pi.*, pr.nombre AS producto_nombre
        FROM pedido_items pi
        JOIN productos pr ON pi.producto_id = pr.id
        WHERE pi.pedido_id = $1`,
@@ -72,11 +72,11 @@ class PedidosService {
 
   async getPedidosByEmpleado(empleado_id) {
     const result = await db.query(
-      `SELECT p.*, u.nombre as empleado_nombre
+      `SELECT p.*, u.nombre AS empleado_nombre
        FROM pedidos p
        LEFT JOIN usuarios u ON p.empleado_id = u.id
        WHERE p.empleado_id = $1
-       ORDER BY p.fecha DESC`,
+       ORDER BY p.created_at DESC`,
       [empleado_id]
     );
     return result.rows;
@@ -84,40 +84,28 @@ class PedidosService {
 
   async getAllPedidos() {
     const result = await db.query(
-      `SELECT p.*, u.nombre as empleado_nombre
+      `SELECT p.*, u.nombre AS empleado_nombre
        FROM pedidos p
        LEFT JOIN usuarios u ON p.empleado_id = u.id
-       ORDER BY p.fecha DESC`
+       ORDER BY p.created_at DESC`
     );
     return result.rows;
   }
 
-  async getAllWithFilters(filtros) {
-    let sql = `SELECT p.*, u.nombre as empleado_nombre
+  async getAllWithFilters(filtros = {}) {
+    let sql = `SELECT p.*, u.nombre AS empleado_nombre
                FROM pedidos p
                LEFT JOIN usuarios u ON p.empleado_id = u.id
                WHERE 1=1`;
     const values = [];
-    let paramIndex = 1;
+    let i = 1;
 
-    if (filtros.estado) {
-      sql += ` AND p.estado = $${paramIndex++}`;
-      values.push(filtros.estado);
-    }
-    if (filtros.empleado_id) {
-      sql += ` AND p.empleado_id = $${paramIndex++}`;
-      values.push(filtros.empleado_id);
-    }
-    if (filtros.fecha_inicio) {
-      sql += ` AND p.fecha >= $${paramIndex++}`;
-      values.push(filtros.fecha_inicio);
-    }
-    if (filtros.fecha_fin) {
-      sql += ` AND p.fecha <= $${paramIndex++}`;
-      values.push(filtros.fecha_fin);
-    }
+    if (filtros.estado)      { sql += ` AND p.estado = $${i++}`;           values.push(filtros.estado); }
+    if (filtros.empleado_id) { sql += ` AND p.empleado_id = $${i++}`;      values.push(filtros.empleado_id); }
+    if (filtros.fecha_inicio){ sql += ` AND p.created_at >= $${i++}`;      values.push(filtros.fecha_inicio); }
+    if (filtros.fecha_fin)   { sql += ` AND p.created_at <= $${i++}`;      values.push(filtros.fecha_fin); }
 
-    sql += ` ORDER BY p.fecha DESC`;
+    sql += ` ORDER BY p.created_at DESC`;
     const result = await db.query(sql, values);
     return result.rows;
   }
@@ -137,29 +125,23 @@ class PedidosService {
 
       let total = 0;
       for (const item of items) {
-        const producto = await client.query(
-          'SELECT precio_venta FROM productos WHERE id = $1',
-          [item.producto_id]
-        );
-        total += producto.rows[0].precio_venta * item.cantidad;
+        const prod = await client.query('SELECT precio_venta FROM productos WHERE id = $1', [item.producto_id]);
+        total += parseFloat(prod.rows[0].precio_venta) * item.cantidad;
       }
 
       await client.query(
         `UPDATE pedidos SET total = $1, updated_at = NOW() WHERE id = $2`,
         [total, id]
       );
-
       await client.query('DELETE FROM pedido_items WHERE pedido_id = $1', [id]);
 
       for (const item of items) {
-        const producto = await client.query(
-          'SELECT precio_venta FROM productos WHERE id = $1',
-          [item.producto_id]
-        );
+        const prod = await client.query('SELECT precio_venta FROM productos WHERE id = $1', [item.producto_id]);
+        const precio = parseFloat(prod.rows[0].precio_venta);
         await client.query(
-          `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario)
-           VALUES ($1, $2, $3, $4)`,
-          [id, item.producto_id, item.cantidad, producto.rows[0].precio_venta]
+          `INSERT INTO pedido_items (pedido_id, producto_id, cantidad, precio_unitario, subtotal)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, item.producto_id, item.cantidad, precio, precio * item.cantidad]
         );
       }
 
@@ -179,44 +161,18 @@ class PedidosService {
       await client.query('BEGIN');
 
       const pedidoResult = await client.query(
-        `UPDATE pedidos SET estado = 'entregado', updated_at = NOW()
-         WHERE id = $1
-         RETURNING *`,
+        `UPDATE pedidos SET estado = 'entregado', completado_at = NOW(), updated_at = NOW()
+         WHERE id = $1 RETURNING *`,
         [id]
       );
       if (pedidoResult.rows.length === 0) throw new Error('PEDIDO_NO_ENCONTRADO');
 
       const itemsResult = await client.query(
-        `SELECT pi.producto_id, pi.cantidad,
-                pc.corte_ref, pc.kg_requeridos
-         FROM pedido_items pi
-         LEFT JOIN producto_carnes pc ON pi.producto_id = pc.producto_id
-         WHERE pi.pedido_id = $1`,
+        `SELECT pi.producto_id, pi.cantidad FROM pedido_items pi WHERE pi.pedido_id = $1`,
         [id]
       );
 
       for (const item of itemsResult.rows) {
-        if (item.corte_ref && item.kg_requeridos) {
-          const kgADescontar = parseFloat(item.kg_requeridos) * item.cantidad;
-
-          const carneResult = await client.query(
-            'SELECT kg_disponibles FROM carnes WHERE corte = $1 FOR UPDATE',
-            [item.corte_ref]
-          );
-
-          if (carneResult.rows.length === 0) continue;
-
-          const kgActual = parseFloat(carneResult.rows[0].kg_disponibles);
-          if (kgActual < kgADescontar) {
-            throw new Error(`STOCK_CARNE_INSUFICIENTE:${item.corte_ref}`);
-          }
-
-          await client.query(
-            `UPDATE carnes SET kg_disponibles = kg_disponibles - $1 WHERE corte = $2`,
-            [kgADescontar, item.corte_ref]
-          );
-        }
-
         const insumosResult = await client.query(
           `SELECT insumo_id, cantidad_requerida FROM producto_insumos WHERE producto_id = $1`,
           [item.producto_id]
@@ -229,7 +185,6 @@ class PedidosService {
             'SELECT stock_actual, nombre FROM insumos WHERE id = $1 FOR UPDATE',
             [insumo.insumo_id]
           );
-
           if (stockResult.rows.length === 0) continue;
 
           const { stock_actual, nombre } = stockResult.rows[0];
@@ -238,20 +193,29 @@ class PedidosService {
           }
 
           await client.query(
-            `UPDATE insumos SET stock_actual = stock_actual - $1 WHERE id = $2`,
+            `UPDATE insumos SET stock_actual = stock_actual - $1, updated_at = NOW() WHERE id = $2`,
             [cantidadADescontar, insumo.insumo_id]
           );
 
           await client.query(
-            `INSERT INTO stock_movimientos (insumo_id, usuario_id, tipo, cantidad, motivo)
-             VALUES ($1, NULL, 'salida', $2, 'Pedido completado')`,
-            [insumo.insumo_id, cantidadADescontar]
+            `INSERT INTO stock_movimientos (insumo_id, pedido_id, tipo, cantidad, motivo, created_at)
+             VALUES ($1, $2, 'salida', $3, 'Pedido completado', NOW())`,
+            [insumo.insumo_id, id, cantidadADescontar]
           );
         }
       }
 
       await client.query('COMMIT');
-      return pedidoResult.rows[0];
+      const pedidoCompletado = pedidoResult.rows[0];
+      historialService.registrar({
+        usuario_id:  null,
+        rol_id:      null,
+        tipo_accion: TIPOS_ACCION.COMPLETAR,
+        entidad:     ENTIDADES.PEDIDOS,
+        entidad_id:  id,
+        descripcion: `Pedido completado [${id}]`,
+      }).catch(() => {});
+      return pedidoCompletado;
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -261,8 +225,20 @@ class PedidosService {
   }
 
   async cancelPedido(id) {
-    const sql = `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`;
-    const result = await db.query(sql, [id]);
+    const result = await db.query(
+      `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    if (result.rows[0]) {
+      historialService.registrar({
+        usuario_id:  null,
+        rol_id:      null,
+        tipo_accion: TIPOS_ACCION.CANCELAR,
+        entidad:     ENTIDADES.PEDIDOS,
+        entidad_id:  id,
+        descripcion: `Pedido cancelado [${id}]`,
+      }).catch(() => {});
+    }
     return result.rows[0];
   }
 }
