@@ -43,7 +43,8 @@ const requireRole = (roleNeeded) => {
             return res.status(401).json({ message: 'Usuario no autenticado.' });
         }
 
-        if (req.user.rol !== roleNeeded) {
+        const userRol = (req.user.rol || '').toUpperCase();
+        if (userRol !== roleNeeded.toUpperCase()) {
             return res.status(403).json({ message: 'Acceso denegado. Permisos insuficientes.' });
         }
 
@@ -60,7 +61,8 @@ const requireAnyRole = (...allowedRoles) => {
             return res.status(401).json({ message: 'Usuario no autenticado.' });
         }
 
-        if (!allowedRoles.includes(req.user.rol)) {
+        const userRol = (req.user.rol || '').toUpperCase();
+        if (!allowedRoles.map(r => r.toUpperCase()).includes(userRol)) {
             return res.status(403).json({ message: 'Acceso denegado. Permisos insuficientes.' });
         }
 
