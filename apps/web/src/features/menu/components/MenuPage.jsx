@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { FaPlus, FaTimes, FaUtensils } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
 import { menuService } from "../services/menuService";
+import useInventoryStore from "../../inventory/stores/useInventoryStore";
 import { MenuFilters } from "./MenuFilters";
 import { MenuTable } from "./MenuTable";
 import { MenuMobileList } from "./MenuMobileList";
@@ -9,6 +10,7 @@ import { MenuFormModal } from "./MenuFormModal";
 
 export const MenuPage = () => {
   const { items, isLoading, error, fetchAll, create, update, remove, clearError } = useMenuStore();
+  const { insumos: allInsumos, fetchInsumos } = useInventoryStore();
   const [search, setSearch] = useState("");
   const [categoria, setCategoria] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -17,6 +19,12 @@ export const MenuPage = () => {
   useEffect(() => {
     fetchAll();
   }, []);
+
+  useEffect(() => {
+    if (showModal && allInsumos.length === 0) {
+      fetchInsumos();
+    }
+  }, [showModal]);
 
   const filtered = items.filter((i) => {
     const matchSearch = i.nombre?.toLowerCase().includes(search.toLowerCase());
@@ -31,12 +39,13 @@ export const MenuPage = () => {
 
   const openEdit = async (item) => {
     try {
-      const full = await menuService.getById(item.id);
-      setEditing(full || item);
+      const fullProduct = await menuService.getById(item.id);
+      setEditing(fullProduct);
+      setShowModal(true);
     } catch {
       setEditing(item);
+      setShowModal(true);
     }
-    setShowModal(true);
   };
 
   const handleSubmit = async (data) => {
@@ -47,7 +56,9 @@ export const MenuPage = () => {
         await create(data);
       }
       setShowModal(false);
-    } catch {}
+    } catch {
+      console.error("Error al guardar producto");
+    }
   };
 
   const handleDelete = (id) => {
@@ -117,6 +128,7 @@ export const MenuPage = () => {
         isOpen={showModal}
         editing={editing}
         isLoading={isLoading}
+        allInsumos={allInsumos}
         onSubmit={handleSubmit}
         onClose={() => setShowModal(false)}
       />

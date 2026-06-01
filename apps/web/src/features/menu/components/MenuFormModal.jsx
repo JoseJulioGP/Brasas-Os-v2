@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaTimes, FaPlus, FaTrash } from "react-icons/fa";
-import api from "../../../services/api";
+import { FaTimes, FaPlus, FaTrash, FaSearch } from "react-icons/fa";
 
 const CATEGORIAS = [
   { id: "", label: "Sin categoría" },
@@ -12,20 +11,12 @@ const CATEGORIAS = [
   { id: "postres", label: "Postres" },
 ];
 
-export const MenuFormModal = ({ isOpen, editing, isLoading, onSubmit, onClose }) => {
+const initialInsumo = { insumo_id: "", cantidad_requerida: 1, unidad: "" };
+
+export const MenuFormModal = ({ isOpen, editing, isLoading, allInsumos, onSubmit, onClose }) => {
   const [form, setForm] = useState({ nombre: "", precio_venta: "", categoria: "" });
   const [insumos, setInsumos] = useState([]);
-  const [insumoRows, setInsumoRows] = useState([]);
-  const [loadingInsumos, setLoadingInsumos] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    setLoadingInsumos(true);
-    api.get("/inventario/insumos")
-      .then(({ data }) => setInsumos(Array.isArray(data) ? data : (data?.data || [])))
-      .catch(() => setInsumos([]))
-      .finally(() => setLoadingInsumos(false));
-  }, [isOpen]);
+  const [insumoSearch, setInsumoSearch] = useState("");
 
   useEffect(() => {
     if (editing) {
@@ -34,43 +25,66 @@ export const MenuFormModal = ({ isOpen, editing, isLoading, onSubmit, onClose })
         precio_venta: editing.precio_venta?.toString() || "",
         categoria: editing.categoria || "",
       });
-      setInsumoRows(
-        Array.isArray(editing.insumos)
-          ? editing.insumos.map((i) => ({ insumo_id: i.insumo_id || i.id, cantidad_requerida: i.cantidad_requerida?.toString() || "" }))
-          : []
-      );
+      if (editing.insumos && editing.insumos.length > 0) {
+        setInsumos(editing.insumos.map(i => ({
+          insumo_id: i.insumo_id,
+          cantidad_requerida: i.cantidad_requerida,
+          unidad: i.unidad || ""
+        })));
+      } else {
+        setInsumos([]);
+      }
     } else {
       setForm({ nombre: "", precio_venta: "", categoria: "" });
-      setInsumoRows([]);
+      setInsumos([]);
     }
   }, [editing, isOpen]);
 
   if (!isOpen) return null;
 
-  const addInsumoRow = () => setInsumoRows((prev) => [...prev, { insumo_id: "", cantidad_requerida: "" }]);
-
-  const removeInsumoRow = (idx) => setInsumoRows((prev) => prev.filter((_, i) => i !== idx));
-
-  const updateInsumoRow = (idx, field, value) =>
-    setInsumoRows((prev) => prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)));
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    const validInsumos = insumoRows
-      .filter((r) => r.insumo_id && r.cantidad_requerida && parseFloat(r.cantidad_requerida) > 0)
-      .map((r) => ({ insumo_id: r.insumo_id, cantidad_requerida: parseFloat(r.cantidad_requerida) }));
+    const insumosValidos = insumos.filter(i => i.insumo_id);
     onSubmit({
       nombre: form.nombre,
       precio_venta: Number(form.precio_venta),
       categoria: form.categoria || null,
-      insumos: validInsumos,
+      insumos: insumosValidos.length > 0 ? insumosValidos : undefined,
     });
+  };
+
+  const addInsumo = () => {
+    setInsumos([...insumos, { ...initialInsumo }]);
+  };
+
+  const removeInsumo = (index) => {
+    setInsumos(insumos.filter((_, i) => i !== index));
+  };
+
+  const updateInsumo = (index, field, value) => {
+    const updated = [...insumos];
+    updated[index] = { ...updated[index], [field]: value };
+    setInsumos(updated);
+  };
+
+  const filteredInsumos = (allInsumos || []).filter(i =>
+    i.nombre?.toLowerCase().includes(insumoSearch.toLowerCase())
+  );
+
+  const getInsumoNombre = (id) => {
+    const found = (allInsumos || []).find(i => i.id === id);
+    return found?.nombre || "Seleccionar...";
+  };
+
+  const getInsumoUnidad = (id) => {
+    const found = (allInsumos || []).find(i => i.id === id);
+    return found?.unidad || found?.unidad_medida || "";
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-[#111110] border border-white/[0.06] rounded-2xl w-full max-w-lg shadow-2xl animate-fade-in max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-white/[0.06] sticky top-0 bg-[#111110] z-10">
+        <div className="flex justify-between items-center p-6 border-b border-white/[0.06]">
           <h2 className="text-xl font-heading font-bold text-[#f5f0eb]">
             {editing ? "Editar Plato" : "Nuevo Plato"}
           </h2>
@@ -119,52 +133,63 @@ export const MenuFormModal = ({ isOpen, editing, isLoading, onSubmit, onClose })
             />
           </div>
 
-          <div className="border-t border-white/[0.06] pt-4">
-            <div className="flex justify-between items-center mb-3">
+          {/* Insumos requeridos */}
+          <div className="pt-2 border-t border-white/[0.06]">
+            <div className="flex items-center justify-between mb-3">
               <label className="text-sm text-white/60 font-body">Insumos requeridos</label>
               <button
                 type="button"
-                onClick={addInsumoRow}
-                disabled={loadingInsumos || insumos.length === 0}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/[0.04] text-white/50 hover:text-white hover:bg-white/[0.08] transition-all disabled:opacity-30"
+                onClick={addInsumo}
+                className="flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 font-medium transition-colors font-body"
               >
-                <FaPlus /> Agregar
+                <FaPlus className="text-[10px]" /> Agregar insumo
               </button>
             </div>
 
-            {insumoRows.length === 0 ? (
-              <p className="text-xs text-white/20 font-body py-2">Sin insumos asignados</p>
+            {insumos.length === 0 ? (
+              <p className="text-xs text-white/20 font-body text-center py-3">
+                Ningún insumo agregado
+              </p>
             ) : (
-              <div className="space-y-2">
-                {insumoRows.map((row, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <select
-                      value={row.insumo_id}
-                      onChange={(e) => updateInsumoRow(idx, "insumo_id", e.target.value)}
-                      className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-[#f5f0eb] focus:outline-none focus:border-orange-500/30 transition-colors font-body"
-                    >
-                      <option value="" className="bg-[#0c0c0c]">Seleccionar insumo</option>
-                      {insumos.map((ins) => (
-                        <option key={ins.id} value={ins.id} className="bg-[#0c0c0c]">
-                          {ins.nombre} ({ins.unidad_medida})
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.001"
-                      placeholder="Cant."
-                      value={row.cantidad_requerida}
-                      onChange={(e) => updateInsumoRow(idx, "cantidad_requerida", e.target.value)}
-                      className="w-24 bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2 text-sm text-[#f5f0eb] placeholder:text-white/20 font-number focus:outline-none focus:border-orange-500/30 transition-colors"
-                    />
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                {insumos.map((ins, index) => (
+                  <div key={index} className="flex gap-2 items-start">
+                    <div className="flex-1 relative">
+                      <select
+                        value={ins.insumo_id}
+                        onChange={(e) => updateInsumo(index, "insumo_id", e.target.value)}
+                        className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl px-3 py-2 text-xs text-[#f5f0eb] focus:outline-none focus:border-orange-500/30 transition-colors font-body appearance-none"
+                      >
+                        <option value="" className="bg-[#0c0c0c]">Seleccionar insumo...</option>
+                          {(allInsumos || []).map(i => (
+                          <option key={i.id} value={i.id} className="bg-[#0c0c0c]">
+                            {i.nombre} {i.unidad || i.unidad_medida ? `(${i.unidad || i.unidad_medida})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-24 shrink-0 relative">
+                      <input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder={ins.insumo_id ? `Ej: 0.3` : "Cant."}
+                        value={ins.cantidad_requerida}
+                        onChange={(e) => updateInsumo(index, "cantidad_requerida", Number(e.target.value))}
+                        className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl px-2 py-2 text-xs text-[#f5f0eb] placeholder:text-white/20 font-number focus:outline-none focus:border-orange-500/30 transition-colors text-center pr-7"
+                      />
+                      {ins.insumo_id && getInsumoUnidad(ins.insumo_id) && (
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/30 font-body pointer-events-none">
+                          {getInsumoUnidad(ins.insumo_id)}
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
-                      onClick={() => removeInsumoRow(idx)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                      onClick={() => removeInsumo(index)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400/50 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0 mt-0.5"
                     >
-                      <FaTrash className="text-xs" />
+                      <FaTrash className="text-[10px]" />
                     </button>
                   </div>
                 ))}

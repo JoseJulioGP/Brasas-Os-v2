@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { inventoryService } from "../services/inventoryService";
 
 const useInventoryStore = create((set, get) => ({
-  // Estado
   carnes: [],
   insumos: [],
   movimientos: [],
@@ -10,8 +9,6 @@ const useInventoryStore = create((set, get) => ({
   error: null,
 
   // === CARNES ===
-  
-  // Obtener todas las carnes
   fetchCarnes: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -22,26 +19,11 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
-  // Obtener carnes disponibles
-  fetchCarnesDisponibles: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const carnes = await inventoryService.getCarnesDisponibles();
-      set({ carnes, isLoading: false });
-    } catch (error) {
-      set({ error: error.response?.data?.message || error.message, isLoading: false });
-    }
-  },
-
-  // Crear carne
   addCarne: async (item) => {
     set({ isLoading: true, error: null });
     try {
       const newItem = await inventoryService.createCarne(item);
-      set((state) => ({ 
-        carnes: [...state.carnes, { ...newItem, nombre: newItem.corte, cantidad: newItem.kg_disponibles, unidad: 'kg' }], 
-        isLoading: false 
-      }));
+      set((state) => ({ carnes: [...state.carnes, newItem], isLoading: false }));
       return newItem;
     } catch (error) {
       set({ error: error.response?.data?.message || error.message, isLoading: false });
@@ -49,14 +31,13 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
-  // Actualizar carne
   updateCarne: async (id, data) => {
     set({ isLoading: true, error: null });
     try {
       const updated = await inventoryService.updateCarne(id, data);
       set((state) => ({
-        carnes: state.carnes.map((c) => (c.id === id ? { ...updated, nombre: updated.corte } : c)),
-        isLoading: false
+        carnes: state.carnes.map((c) => (c.id === id ? updated : c)),
+        isLoading: false,
       }));
       return updated;
     } catch (error) {
@@ -66,8 +47,6 @@ const useInventoryStore = create((set, get) => ({
   },
 
   // === INSUMOS ===
-
-  // Obtener insumos
   fetchInsumos: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -78,15 +57,11 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
-  // Crear insumo
   addInsumo: async (item) => {
     set({ isLoading: true, error: null });
     try {
       const newItem = await inventoryService.createInsumo(item);
-      set((state) => ({ 
-        insumos: [...state.insumos, newItem], 
-        isLoading: false 
-      }));
+      set((state) => ({ insumos: [...state.insumos, newItem], isLoading: false }));
       return newItem;
     } catch (error) {
       set({ error: error.response?.data?.message || error.message, isLoading: false });
@@ -94,14 +69,13 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
-  // Actualizar insumo
   updateInsumo: async (id, data) => {
     set({ isLoading: true, error: null });
     try {
       const updated = await inventoryService.updateInsumo(id, data);
       set((state) => ({
         insumos: state.insumos.map((i) => (i.id === id ? updated : i)),
-        isLoading: false
+        isLoading: false,
       }));
       return updated;
     } catch (error) {
@@ -111,8 +85,6 @@ const useInventoryStore = create((set, get) => ({
   },
 
   // === COMBINADO ===
-
-  // Obtener todo el inventario
   fetchAll: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -124,8 +96,6 @@ const useInventoryStore = create((set, get) => ({
   },
 
   // === MOVIMIENTOS ===
-
-  // Obtener movimientos
   fetchMovimientos: async (filtros = {}) => {
     set({ isLoading: true, error: null });
     try {
@@ -136,24 +106,34 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
-  // Crear movimiento
-  addMovimiento: async (movimiento) => {
+  addEntrada: async (movimiento) => {
     set({ isLoading: true, error: null });
     try {
-      const newMovimiento = await inventoryService.createMovimiento(movimiento);
-      set((state) => ({ 
-        movimientos: [newMovimiento, ...state.movimientos], 
-        isLoading: false 
-      }));
-      return newMovimiento;
+      const result = await inventoryService.createEntrada(movimiento);
+      // Refrescar stock del insumo correspondiente
+      get().fetchAll();
+      set({ isLoading: false });
+      return result;
     } catch (error) {
       set({ error: error.response?.data?.message || error.message, isLoading: false });
       throw error;
     }
   },
 
-  // Limpiar error
-  clearError: () => set({ error: null })
+  addSalida: async (movimiento) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await inventoryService.createSalida(movimiento);
+      get().fetchAll();
+      set({ isLoading: false });
+      return result;
+    } catch (error) {
+      set({ error: error.response?.data?.message || error.message, isLoading: false });
+      throw error;
+    }
+  },
+
+  clearError: () => set({ error: null }),
 }));
 
 export default useInventoryStore;

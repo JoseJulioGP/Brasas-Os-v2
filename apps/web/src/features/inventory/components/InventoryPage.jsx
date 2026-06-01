@@ -112,10 +112,22 @@ export const InventoryPage = () => {
   );
 
   const handleAdd = async (newItem) => {
-    if (newItem.tipo === "carne" || newItem.categoria === "carnes") {
-      await addCarne(newItem);
+    if (newItem.categoria === "carnes") {
+      await addCarne({
+        corte: newItem.nombre,
+        kg_comprados: Number(newItem.cantidad),
+        kg_disponibles: Number(newItem.cantidad),
+        precio_por_kg: newItem.precio_por_kg || 0,
+        proveedor: null,
+      });
     } else {
-      await addInsumo(newItem);
+      await addInsumo({
+        nombre: newItem.nombre,
+        categoria: newItem.categoria,
+        unidad_medida: newItem.unidad,
+        stock_actual: Number(newItem.cantidad),
+        stock_minimo: Number(newItem.stockMinimo) || 0,
+      });
     }
   };
 

@@ -15,13 +15,14 @@ export const HistoryPage = () => {
   const { items, total, page, limit, filtros, isLoading, error, fetchHistorial, setFiltros, setPage, reset } =
     useHistoryStore();
 
-  const config = historyViewConfig[user?.rol] || historyViewConfig.EMPLEADO;
+  const rol = user?.rol?.toUpperCase();
+  const config = historyViewConfig[rol] || historyViewConfig.EMPLEADO;
   const [usuarios, setUsuarios] = useState([]);
 
   useEffect(() => {
     reset();
     fetchHistorial();
-    if (user?.rol === "ADMIN") {
+    if (rol === "ADMIN") {
       usersService.getUsers().then((data) => setUsuarios(data?.data ?? data ?? [])).catch(() => {});
     }
   }, [user?.rol]);
@@ -40,9 +41,9 @@ export const HistoryPage = () => {
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#f5f0eb]">Historial</h1>
             <p className="text-sm text-white/40 font-body">
-              {user?.rol === "ADMIN" && "Historial técnico global"}
-              {user?.rol === "JEFE" && "Historial operativo del negocio"}
-              {user?.rol === "EMPLEADO" && "Tus acciones registradas"}
+              {rol === "ADMIN" && "Historial técnico global"}
+              {rol === "JEFE" && "Historial operativo del negocio"}
+              {rol === "EMPLEADO" && "Tus acciones registradas"}
             </p>
           </div>
         </div>

@@ -63,7 +63,7 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems = getNavItems(user?.rol);
+  const navItems = getNavItems(user?.rol?.toUpperCase());
 
   const handleLogout = () => {
     logout();

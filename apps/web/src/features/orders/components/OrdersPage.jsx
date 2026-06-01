@@ -15,7 +15,8 @@ export const OrdersPage = () => {
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
 
-  const isAdminOrJefe = user?.rol === "ADMIN" || user?.rol === "JEFE";
+  const rol = user?.rol?.toUpperCase();
+  const isAdminOrJefe = rol === "ADMIN" || rol === "JEFE";
 
   useEffect(() => {
     if (isAdminOrJefe) fetchAllOrders();
@@ -93,7 +94,7 @@ export const OrdersPage = () => {
         ) : (
           <div className="grid md:grid-cols-2 gap-4 animate-fade-in-up opacity-0 stagger-2">
             {filtered.map((order) => (
-              <OrderCard key={order.id} order={order} onStatusChange={updateOrderStatus} onCancel={user?.rol === "ADMIN" ? cancelOrder : undefined} />
+              <OrderCard key={order.id} order={order} onStatusChange={updateOrderStatus} onCancel={rol === "ADMIN" ? cancelOrder : undefined} />
             ))}
           </div>
         )}
