@@ -58,7 +58,7 @@ const DashboardPage = () => {
             <QuickActions />
             <StatsCards stats={stats} periodo={periodo} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-              {user?.rol === "ADMIN" && <FinancialSummary financial={financial} />}
+              {user?.rol?.toUpperCase() === "ADMIN" && <FinancialSummary financial={financial} />}
               <InventoryCard inventory={inventory} />
             </div>
             <TopProducts products={topProducts} />

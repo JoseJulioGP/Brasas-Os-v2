@@ -8,11 +8,19 @@ class HistorialRepository {
       RETURNING *
     `;
     const result = await db.query(sql, [
+<<<<<<< HEAD
       usuario_id  || null,
       rol_id      || null,
       tipo_accion || null,
       entidad     || null,
       entidad_id  ? String(entidad_id) : null,
+=======
+      usuario_id || null,
+      rol_id     || null,
+      tipo_accion || null,
+      entidad    || null,
+      entidad_id ? String(entidad_id) : null,
+>>>>>>> feature/frontend
       descripcion || null,
     ]);
     return result.rows[0];
@@ -33,6 +41,7 @@ class HistorialRepository {
     let idx = 1;
     const conditions = [];
 
+<<<<<<< HEAD
     if (usuario_id)        { conditions.push(`h.usuario_id = $${idx++}`);  values.push(usuario_id); }
     if (rol)               { conditions.push(`r.nombre = $${idx++}`);       values.push(rol); }
     if (tipo_accion)       { conditions.push(`h.tipo_accion = $${idx++}`);  values.push(tipo_accion); }
@@ -47,6 +56,41 @@ class HistorialRepository {
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const base  = `
+=======
+    if (usuario_id) {
+      conditions.push(`h.usuario_id = $${idx++}`);
+      values.push(usuario_id);
+    }
+    if (rol) {
+      conditions.push(`r.nombre = $${idx++}`);
+      values.push(rol);
+    }
+    if (tipo_accion) {
+      conditions.push(`h.tipo_accion = $${idx++}`);
+      values.push(tipo_accion);
+    }
+    if (entidad) {
+      conditions.push(`h.entidad = $${idx++}`);
+      values.push(entidad);
+    }
+    if (fecha_inicio) {
+      conditions.push(`h.fecha >= $${idx++}`);
+      values.push(fecha_inicio);
+    }
+    if (fecha_fin) {
+      conditions.push(`h.fecha <= $${idx++}`);
+      values.push(fecha_fin);
+    }
+    if (entidades_whitelist && entidades_whitelist.length > 0) {
+      const placeholders = entidades_whitelist.map(() => `$${idx++}`).join(', ');
+      conditions.push(`h.entidad IN (${placeholders})`);
+      values.push(...entidades_whitelist);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const base = `
+>>>>>>> feature/frontend
       FROM historial h
       LEFT JOIN usuarios u ON h.usuario_id = u.id
       LEFT JOIN roles    r ON h.rol_id     = r.id

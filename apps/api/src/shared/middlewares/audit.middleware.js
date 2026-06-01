@@ -16,6 +16,7 @@ const auditMiddleware = (req, res, next) => {
     if (res.statusCode < 200 || res.statusCode >= 300) return;
 
     try {
+<<<<<<< HEAD
       const parts    = req.path.replace(/^\/api\/v\d+\//, '').split('/').filter(Boolean);
       const entidad  = parts[0] || null;
       const entidad_id = parts[1] || null;
@@ -24,6 +25,18 @@ const auditMiddleware = (req, res, next) => {
 
       historialService.registrar({
         usuario_id:  req.user?.id     || null,
+=======
+      // Extraer entidad e id del path: /api/v1/<entidad>/<id>/...
+      const parts = req.path.replace(/^\/api\/v\d+\//, '').split('/').filter(Boolean);
+      const entidad    = parts[0] || null;
+      const entidad_id = parts[1] || null;
+
+      // No auditar el propio historial ni rutas de auth (se manejan en el service)
+      if (entidad === 'historial' || entidad === 'auth') return;
+
+      historialService.registrar({
+        usuario_id:  req.user?.id    || null,
+>>>>>>> feature/frontend
         rol_id:      req.user?.rol_id || null,
         tipo_accion: accion,
         entidad,
@@ -31,7 +44,11 @@ const auditMiddleware = (req, res, next) => {
         descripcion: `${accion} ${entidad}${entidad_id ? ` [${entidad_id}]` : ''}`,
       }).catch(() => {});
     } catch (_) {
+<<<<<<< HEAD
       // fallo silencioso
+=======
+      // fallo silencioso — nunca afectar la operación principal
+>>>>>>> feature/frontend
     }
   });
 
