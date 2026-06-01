@@ -7,6 +7,7 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+// Inyectar JWT en cada request automáticamente
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("brasas_token");
   if (token) {
@@ -15,6 +16,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Si el servidor responde 401, limpiar sesión y redirigir al login
 api.interceptors.response.use(
   (response) => response,
   (error) => {

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { FaPlus, FaTimes, FaUtensils } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
+<<<<<<< HEAD
+=======
+import { menuService } from "../services/menuService";
+import useInventoryStore from "../../inventory/stores/useInventoryStore";
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
 import { MenuFilters } from "./MenuFilters";
 import { MenuTable } from "./MenuTable";
 import { MenuMobileList } from "./MenuMobileList";
@@ -8,6 +13,10 @@ import { MenuFormModal } from "./MenuFormModal";
 
 export const MenuPage = () => {
   const { items, isLoading, error, fetchAll, create, update, remove, clearError } = useMenuStore();
+<<<<<<< HEAD
+=======
+  const { insumos: allInsumos, fetchInsumos } = useInventoryStore();
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   const [search, setSearch] = useState("");
   const [categoria, setCategoria] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -17,6 +26,15 @@ export const MenuPage = () => {
     fetchAll();
   }, []);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    if (showModal && allInsumos.length === 0) {
+      fetchInsumos();
+    }
+  }, [showModal]);
+
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   const filtered = items.filter((i) => {
     const matchSearch = i.nombre?.toLowerCase().includes(search.toLowerCase());
     const matchCat = !categoria || i.categoria === categoria;
@@ -28,9 +46,21 @@ export const MenuPage = () => {
     setShowModal(true);
   };
 
+<<<<<<< HEAD
   const openEdit = (item) => {
     setEditing(item);
     setShowModal(true);
+=======
+  const openEdit = async (item) => {
+    try {
+      const fullProduct = await menuService.getById(item.id);
+      setEditing(fullProduct);
+      setShowModal(true);
+    } catch {
+      setEditing(item);
+      setShowModal(true);
+    }
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   };
 
   const handleSubmit = async (data) => {
@@ -41,7 +71,13 @@ export const MenuPage = () => {
         await create(data);
       }
       setShowModal(false);
+<<<<<<< HEAD
     } catch {}
+=======
+    } catch {
+      console.error("Error al guardar producto");
+    }
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   };
 
   const handleDelete = (id) => {
@@ -111,6 +147,10 @@ export const MenuPage = () => {
         isOpen={showModal}
         editing={editing}
         isLoading={isLoading}
+<<<<<<< HEAD
+=======
+        allInsumos={allInsumos}
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
         onSubmit={handleSubmit}
         onClose={() => setShowModal(false)}
       />

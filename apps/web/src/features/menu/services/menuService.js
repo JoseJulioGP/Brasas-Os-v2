@@ -3,7 +3,11 @@ import api from "../../../services/api";
 export const menuService = {
   async getAll() {
     const { data } = await api.get("/productos");
+<<<<<<< HEAD
     return data;
+=======
+    return data?.data || data;
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   },
 
   async getWithCosts() {

@@ -13,7 +13,7 @@ const pool = new Pool({
   // Configuración de optimización para Brasas-OS
   max: 10, // Máximo de conexiones simultáneas
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // 10s para tolerar latencia de Supabase
 });
 
 // Prueba de fuego: Verificar la conexión al iniciar
@@ -32,5 +32,6 @@ pool.connect((err, client, release) => {
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
+  connect: () => pool.connect(),
   pool
 };

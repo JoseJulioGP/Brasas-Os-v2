@@ -2,7 +2,11 @@ import { FaBox } from "react-icons/fa";
 import { StatusBadge } from "./StatusBadge";
 import { useMenuStore } from "../../menu/stores/useMenuStore";
 
+<<<<<<< HEAD
 export const OrderCard = ({ order, onStatusChange }) => {
+=======
+export const OrderCard = ({ order, onStatusChange, onCancel }) => {
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
   const { items: menuItems } = useMenuStore();
 
   const getItemName = (id) => {
@@ -25,8 +29,13 @@ export const OrderCard = ({ order, onStatusChange }) => {
 
   const nextState = (current) => {
     switch (current) {
+<<<<<<< HEAD
       case "PENDIENTE": return { next: "EN_PROCESO", label: "Iniciar" };
       case "EN_PROCESO": return { next: "COMPLETADO", label: "Completar" };
+=======
+      case "pendiente":  return { next: "preparando", label: "Iniciar" };
+      case "preparando": return { next: "entregado",  label: "Completar" };
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
       default: return null;
     }
   };
@@ -92,8 +101,13 @@ export const OrderCard = ({ order, onStatusChange }) => {
             {next.label}
           </button>
         )}
+<<<<<<< HEAD
         {(order.estado === "PENDIENTE" || order.estado === "EN_PROCESO") && (
           <button onClick={() => onStatusChange(order.id, "CANCELADO")}
+=======
+        {onCancel && (order.estado === "pendiente" || order.estado === "preparando") && (
+          <button onClick={() => onCancel(order.id)}
+>>>>>>> 47bba80be1627d21fba2a8195396ca4b89bcaebf
             className="flex-1 py-2 bg-red-600/10 text-red-400 rounded-xl text-sm font-medium hover:bg-red-600/20 transition-all font-body">
             Cancelar
           </button>

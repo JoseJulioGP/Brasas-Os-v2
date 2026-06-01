@@ -1,0 +1,29 @@
+const TIPOS_ACCION = {
+  CREAR:     'CREAR',
+  EDITAR:    'EDITAR',
+  ELIMINAR:  'ELIMINAR',
+  LOGIN:     'LOGIN',
+  LOGOUT:    'LOGOUT',
+  COMPLETAR: 'COMPLETAR',
+  CANCELAR:  'CANCELAR',
+};
+
+const ENTIDADES = {
+  PRODUCTOS:  'productos',
+  PEDIDOS:    'pedidos',
+  CARNES:     'carnes',
+  INSUMOS:    'insumos',
+  INVENTARIO: 'inventario',
+  USUARIOS:   'usuarios',
+  AUTH:       'auth',
+};
+
+const ENTIDADES_NEGOCIO = [
+  ENTIDADES.PEDIDOS,
+  ENTIDADES.INVENTARIO,
+  ENTIDADES.CARNES,
+  ENTIDADES.INSUMOS,
+  ENTIDADES.PRODUCTOS,
+];
+
+module.exports = { TIPOS_ACCION, ENTIDADES, ENTIDADES_NEGOCIO };

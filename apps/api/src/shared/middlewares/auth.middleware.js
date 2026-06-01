@@ -18,11 +18,9 @@ const verifyToken = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // Guardar tiempo de última actividad
         decoded.lastActivity = Date.now();
-
-        // Agregar usuario al request
+        // Normalizar rol a mayúsculas para comparaciones consistentes
+        if (decoded.rol) decoded.rol = decoded.rol.toUpperCase();
         req.user = decoded;
         next();
     } catch (error) {
@@ -45,7 +43,8 @@ const requireRole = (roleNeeded) => {
             return res.status(401).json({ message: 'Usuario no autenticado.' });
         }
 
-        if (req.user.rol !== roleNeeded) {
+        const userRol = (req.user.rol || '').toUpperCase();
+        if (userRol !== roleNeeded.toUpperCase()) {
             return res.status(403).json({ message: 'Acceso denegado. Permisos insuficientes.' });
         }
 
@@ -62,7 +61,8 @@ const requireAnyRole = (...allowedRoles) => {
             return res.status(401).json({ message: 'Usuario no autenticado.' });
         }
 
-        if (!allowedRoles.includes(req.user.rol)) {
+        const userRol = (req.user.rol || '').toUpperCase();
+        if (!allowedRoles.map(r => r.toUpperCase()).includes(userRol)) {
             return res.status(403).json({ message: 'Acceso denegado. Permisos insuficientes.' });
         }
 

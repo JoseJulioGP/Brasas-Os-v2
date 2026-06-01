@@ -1,4 +1,5 @@
 import api from "../../../services/api";
+
 export const authService = {
   async login(email, password) {
     const { data } = await api.post("/auth/login", { email, password });
@@ -6,33 +7,43 @@ export const authService = {
     localStorage.setItem("brasas_user", JSON.stringify(data.user));
     return data.user;
   },
+
   async register(nombre, email, password) {
     const { data } = await api.post("/auth/register", { nombre, email, password });
     localStorage.setItem("brasas_token", data.token);
     localStorage.setItem("brasas_user", JSON.stringify(data.user));
     return data.user;
   },
-  async getCurrentUser() {
-    const stored = localStorage.getItem("brasas_user");
-    if (!stored) return null;
+
+  getCurrentUser() {
     const token = localStorage.getItem("brasas_token");
-    if (!token) return null;
+    const stored = localStorage.getItem("brasas_user");
+    if (!token || !stored) return null;
+
     try {
-      const { data } = await api.get("/auth/me");
-      return data.user;
-    } catch {
+      // Verificar expiración del token sin librería (decodificando el payload)
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+        this.logout();
+        return null;
+      }
       return JSON.parse(stored);
+    } catch {
+      this.logout();
+      return null;
     }
   },
+
   logout() {
     localStorage.removeItem("brasas_token");
     localStorage.removeItem("brasas_user");
   },
+
   getToken() {
-    return localStorage.getItem('brasas_token');
+    return localStorage.getItem("brasas_token");
   },
 
   isAuthenticated() {
-    return !!localStorage.getItem('brasas_token');
-  }
+    return !!this.getCurrentUser();
+  },
 };

@@ -28,7 +28,7 @@ const getProductoById = async (req, res) => {
 };
 
 const createProducto = async (req, res) => {
-  const { nombre, precio_venta, costo_produccion, categoria } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria, insumos } = req.body;
 
   if (!nombre || !precio_venta) {
     return res.status(400).json({ message: 'Nombre y precio son requeridos' });
@@ -47,7 +47,8 @@ const createProducto = async (req, res) => {
       nombre, 
       precio_venta, 
       costo_produccion, 
-      categoria 
+      categoria,
+      insumos
     });
     res.status(201).json(producto);
   } catch (error) {
@@ -58,7 +59,7 @@ const createProducto = async (req, res) => {
 
 const updateProducto = async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio_venta, costo_produccion, categoria, activo } = req.body;
+  const { nombre, precio_venta, costo_produccion, categoria, activo, insumos } = req.body;
 
   // Validación de negocio
   if (costo_produccion && precio_venta && costo_produccion >= precio_venta) {
@@ -74,7 +75,8 @@ const updateProducto = async (req, res) => {
       precio_venta, 
       costo_produccion, 
       categoria, 
-      activo 
+      activo,
+      insumos
     });
     if (!producto) {
       return res.status(404).json({ message: 'Producto no encontrado' });
