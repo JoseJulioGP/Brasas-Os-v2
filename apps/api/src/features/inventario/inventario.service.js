@@ -82,7 +82,7 @@ class InventarioService {
   async getMovimientos(filtros = {}) {
     let sql = `SELECT sm.*, i.nombre as insumo_nombre, i.unidad_medida
                FROM stock_movimientos sm
-               LEFT JOIN insumos i ON sm.insumo_id = i.id
+               INNER JOIN insumos i ON sm.insumo_id = i.id
                WHERE i.local_id = $1`;
     const values = [filtros.local_id];
     let i = 2;
