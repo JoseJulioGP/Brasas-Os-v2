@@ -109,7 +109,7 @@ class PedidosService {
     return r.rows[0];
   }
 
-  async descontarStock(pedidoId) {
+  async completarPedido(pedidoId) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
