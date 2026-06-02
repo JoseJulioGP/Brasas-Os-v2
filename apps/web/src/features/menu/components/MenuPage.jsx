@@ -19,9 +19,10 @@ export const MenuPage = () => {
   const [categorias, setCategorias] = useState([]);
 
   useEffect(() => {
+    clearError();
     fetchAll();
     menuService.getCategorias().then(setCategorias).catch(() => setCategorias([]));
-  }, [fetchAll]);
+  }, [fetchAll, clearError]);
 
   useEffect(() => {
     if (showModal && allInsumos.length === 0) fetchInsumos();
