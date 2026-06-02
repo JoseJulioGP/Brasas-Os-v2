@@ -3,16 +3,18 @@ import api from "../../../services/api";
 export const authService = {
   async login(email, password) {
     const { data } = await api.post("/auth/login", { email, password });
+    const user = { ...data.user, rol: (data.user.rol || "").toUpperCase() };
     localStorage.setItem("brasas_token", data.token);
-    localStorage.setItem("brasas_user", JSON.stringify(data.user));
-    return data.user;
+    localStorage.setItem("brasas_user", JSON.stringify(user));
+    return user;
   },
 
   async register(nombre, email, password) {
     const { data } = await api.post("/auth/register", { nombre, email, password });
+    const user = { ...data.user, rol: (data.user.rol || "").toUpperCase() };
     localStorage.setItem("brasas_token", data.token);
-    localStorage.setItem("brasas_user", JSON.stringify(data.user));
-    return data.user;
+    localStorage.setItem("brasas_user", JSON.stringify(user));
+    return user;
   },
 
   getCurrentUser() {

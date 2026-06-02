@@ -7,25 +7,26 @@ import { HistoryFilters } from "./HistoryFilters";
 import { HistoryTable } from "./HistoryTable";
 import { HistoryMobileList } from "./HistoryMobileList";
 import { Pagination } from "./Pagination";
-import { usersService } from "../../users/services/usersService";
-import { ErrorAlert } from "../../auth/components/ErrorAlert";
 
 export const HistoryPage = () => {
   const user = useAuthStore((s) => s.user);
   const { items, total, page, limit, filtros, isLoading, error, fetchHistorial, setFiltros, setPage, reset } =
     useHistoryStore();
 
-  const rol = user?.rol?.toUpperCase();
+  const rol    = (user?.rol || "").toUpperCase();
   const config = historyViewConfig[rol] || historyViewConfig.EMPLEADO;
   const [usuarios, setUsuarios] = useState([]);
 
   useEffect(() => {
     reset();
     fetchHistorial();
-    if (rol === "ADMIN") {
-      usersService.getUsers().then((data) => setUsuarios(data?.data ?? data ?? [])).catch(() => {});
-    }
   }, [user?.rol]);
+
+  const subtitulos = {
+    ADMIN:    "Historial técnico global",
+    JEFE:     "Historial operativo del negocio",
+    EMPLEADO: "Tus acciones registradas",
+  };
 
   return (
     <div className="min-h-screen relative p-4 md:p-8">
@@ -40,22 +41,15 @@ export const HistoryPage = () => {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-heading font-bold text-[#f5f0eb]">Historial</h1>
-            <p className="text-sm text-white/40 font-body">
-              {rol === "ADMIN" && "Historial técnico global"}
-              {rol === "JEFE" && "Historial operativo del negocio"}
-              {rol === "EMPLEADO" && "Tus acciones registradas"}
-            </p>
+            <p className="text-sm text-white/40 font-body">{subtitulos[rol] || "Historial de acciones"}</p>
           </div>
         </div>
 
-        <HistoryFilters
-          config={config}
-          filtros={filtros}
-          onChange={setFiltros}
-          usuarios={usuarios}
-        />
+        <HistoryFilters config={config} filtros={filtros} onChange={setFiltros} usuarios={usuarios} />
 
-        {error && <ErrorAlert error={error} />}
+        {error && (
+          <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 font-body">{error}</div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-20">
@@ -67,7 +61,7 @@ export const HistoryPage = () => {
         ) : items.length === 0 ? (
           <div className="glass rounded-2xl p-16 text-center">
             <FaHistory className="text-5xl text-white/10 mx-auto mb-4" />
-            <p className="text-white/40 font-body text-lg">{config.emptyMessage}</p>
+            <p className="text-white/40 font-body text-lg">{config.emptyMessage || "Sin registros"}</p>
           </div>
         ) : (
           <>

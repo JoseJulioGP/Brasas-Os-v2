@@ -10,12 +10,11 @@ export const OrderFilters = ({ search, onSearchChange, estado, onEstadoChange })
           className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body" />
       </div>
       <select value={estado} onChange={(e) => onEstadoChange(e.target.value)}
-        className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/30 transition-colors font-body"
-      >
+        className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/30 transition-colors font-body">
         <option value="">Todos los estados</option>
         <option value="pendiente">Pendiente</option>
-        <option value="preparando">En Proceso</option>
-        <option value="entregado">Completado</option>
+        <option value="en_proceso">En Proceso</option>
+        <option value="completado">Completado</option>
         <option value="cancelado">Cancelado</option>
       </select>
     </div>

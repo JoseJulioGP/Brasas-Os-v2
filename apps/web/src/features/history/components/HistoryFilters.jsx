@@ -5,7 +5,6 @@ const inputClass =
 
 export const HistoryFilters = ({ config, filtros, onChange, usuarios = [] }) => {
   const { filters, entidades } = config;
-
   const handle = (key) => (e) => onChange({ [key]: e.target.value });
 
   return (
@@ -17,74 +16,41 @@ export const HistoryFilters = ({ config, filtros, onChange, usuarios = [] }) => 
             {usuarios.length > 0 ? (
               <select value={filtros.usuario_id || ""} onChange={handle("usuario_id")} className={inputClass}>
                 <option value="">Todos los usuarios</option>
-                {usuarios.map((u) => (
-                  <option key={u.id} value={u.id}>{u.nombre}</option>
-                ))}
+                {usuarios.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
               </select>
             ) : (
-              <input
-                type="text"
-                placeholder="ID de usuario"
-                value={filtros.usuario_id || ""}
-                onChange={handle("usuario_id")}
-                className={inputClass}
-              />
+              <input type="text" placeholder="ID de usuario" value={filtros.usuario_id || ""} onChange={handle("usuario_id")} className={inputClass} />
             )}
           </div>
         )}
 
-        {filters.includes("rol") && (
+        {filters.includes("accion") && (
           <div className="flex-1 min-w-[130px]">
-            <select value={filtros.rol || ""} onChange={handle("rol")} className={inputClass}>
-              <option value="">Todos los roles</option>
-              <option value="ADMIN">Admin</option>
-              <option value="JEFE">Jefe</option>
-              <option value="EMPLEADO">Empleado</option>
-            </select>
-          </div>
-        )}
-
-        {filters.includes("tipo_accion") && (
-          <div className="flex-1 min-w-[130px]">
-            <select value={filtros.tipo_accion || ""} onChange={handle("tipo_accion")} className={inputClass}>
+            <select value={filtros.accion || ""} onChange={handle("accion")} className={inputClass}>
               <option value="">Todas las acciones</option>
-              {TIPOS_ACCION.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
+              {TIPOS_ACCION.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
         )}
 
-        {filters.includes("entidad") && entidades.length > 0 && (
+        {filters.includes("entidad") && entidades?.length > 0 && (
           <div className="flex-1 min-w-[130px]">
             <select value={filtros.entidad || ""} onChange={handle("entidad")} className={inputClass}>
               <option value="">Todas las entidades</option>
-              {entidades.map((e) => (
-                <option key={e} value={e}>{e}</option>
-              ))}
+              {entidades.map((e) => <option key={e} value={e}>{e}</option>)}
             </select>
           </div>
         )}
 
         {filters.includes("fecha_inicio") && (
           <div className="flex-1 min-w-[140px]">
-            <input
-              type="date"
-              value={filtros.fecha_inicio || ""}
-              onChange={handle("fecha_inicio")}
-              className={inputClass}
-            />
+            <input type="date" value={filtros.fecha_inicio || ""} onChange={handle("fecha_inicio")} className={inputClass} />
           </div>
         )}
 
         {filters.includes("fecha_fin") && (
           <div className="flex-1 min-w-[140px]">
-            <input
-              type="date"
-              value={filtros.fecha_fin || ""}
-              onChange={handle("fecha_fin")}
-              className={inputClass}
-            />
+            <input type="date" value={filtros.fecha_fin || ""} onChange={handle("fecha_fin")} className={inputClass} />
           </div>
         )}
 

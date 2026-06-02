@@ -11,60 +11,47 @@ import { MenuFormModal } from "./MenuFormModal";
 export const MenuPage = () => {
   const { items, isLoading, error, fetchAll, create, update, remove, clearError } = useMenuStore();
   const { insumos: allInsumos, fetchInsumos } = useInventoryStore();
-  const [search, setSearch] = useState("");
+
+  const [search, setSearch]       = useState("");
   const [categoria, setCategoria] = useState("");
   const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing]     = useState(null);
+  const [categorias, setCategorias] = useState([]);
 
   useEffect(() => {
+    clearError();
     fetchAll();
-  }, []);
+    menuService.getCategorias().then(setCategorias).catch(() => setCategorias([]));
+  }, [fetchAll, clearError]);
 
   useEffect(() => {
-    if (showModal && allInsumos.length === 0) {
-      fetchInsumos();
-    }
-  }, [showModal]);
+    if (showModal && allInsumos.length === 0) fetchInsumos();
+  }, [showModal, fetchInsumos, allInsumos.length]);
 
   const filtered = items.filter((i) => {
     const matchSearch = i.nombre?.toLowerCase().includes(search.toLowerCase());
-    const matchCat = !categoria || i.categoria === categoria;
+    const matchCat    = !categoria || i.categoria_id === categoria;
     return matchSearch && matchCat;
   });
 
-  const openCreate = () => {
-    setEditing(null);
-    setShowModal(true);
-  };
+  const openCreate = () => { setEditing(null); setShowModal(true); };
 
   const openEdit = async (item) => {
-    try {
-      const fullProduct = await menuService.getById(item.id);
-      setEditing(fullProduct);
-      setShowModal(true);
-    } catch {
-      setEditing(item);
-      setShowModal(true);
-    }
+    try { setEditing(await menuService.getById(item.id)); }
+    catch { setEditing(item); }
+    setShowModal(true);
   };
 
   const handleSubmit = async (data) => {
     try {
-      if (editing) {
-        await update(editing.id, data);
-      } else {
-        await create(data);
-      }
+      if (editing) await update(editing.id, data);
+      else await create(data);
       setShowModal(false);
-    } catch {
-      console.error("Error al guardar producto");
-    }
+    } catch { /* error queda en store */ }
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("¿Eliminar este producto del menú?")) {
-      remove(id);
-    }
+    if (window.confirm("¿Eliminar este producto del menú?")) remove(id);
   };
 
   return (
@@ -84,15 +71,13 @@ export const MenuPage = () => {
               <p className="text-sm text-white/40 font-body">Carta del local con precios y márgenes</p>
             </div>
           </div>
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body"
-          >
+          <button onClick={openCreate}
+            className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
             <FaPlus /> Nuevo Plato
           </button>
         </div>
 
-        <MenuFilters search={search} onSearchChange={setSearch} categoria={categoria} onCategoriaChange={setCategoria} />
+        <MenuFilters search={search} onSearchChange={setSearch} categoria={categoria} onCategoriaChange={setCategoria} categorias={categorias} />
 
         {error && (
           <div className="mb-6 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 font-body flex justify-between items-center">
@@ -119,19 +104,13 @@ export const MenuPage = () => {
         ) : (
           <>
             <MenuMobileList items={filtered} onEdit={openEdit} onDelete={handleDelete} />
-            <MenuTable items={filtered} onEdit={openEdit} onDelete={handleDelete} />
+            <MenuTable      items={filtered} onEdit={openEdit} onDelete={handleDelete} />
           </>
         )}
       </div>
 
-      <MenuFormModal
-        isOpen={showModal}
-        editing={editing}
-        isLoading={isLoading}
-        allInsumos={allInsumos}
-        onSubmit={handleSubmit}
-        onClose={() => setShowModal(false)}
-      />
+      <MenuFormModal isOpen={showModal} editing={editing} isLoading={isLoading}
+        allInsumos={allInsumos} categorias={categorias} onSubmit={handleSubmit} onClose={() => setShowModal(false)} />
     </div>
   );
 };

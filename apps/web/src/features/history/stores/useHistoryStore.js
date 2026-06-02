@@ -19,10 +19,7 @@ export const useHistoryStore = create((set, get) => ({
       const data = await historyService.getHistorial({ ...filtros, page, limit });
       set({ items: data.data ?? [], total: data.total ?? 0, isLoading: false });
     } catch (err) {
-      set({
-        error: err.response?.data?.message || "Error al cargar historial",
-        isLoading: false,
-      });
+      set({ error: err.response?.data?.message || "Error al cargar historial", isLoading: false });
     }
   },
 

@@ -25,9 +25,4 @@ export const ordersService = {
     const response = await api.put(`/pedidos/${id}/estado`, { estado });
     return response.data;
   },
-
-  async cancelOrder(id) {
-    const response = await api.delete(`/pedidos/${id}`);
-    return response.data;
-  },
 };

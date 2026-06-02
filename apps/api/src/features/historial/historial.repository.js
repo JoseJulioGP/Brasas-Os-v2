@@ -1,39 +1,23 @@
 const db = require('../../shared/database/db');
 
-// Schema real de la tabla historial:
-// id, usuario_id, local_id, entidad, entidad_id (uuid), accion (varchar), detalle (jsonb), created_at
-
 class HistorialRepository {
   async insert({ usuario_id, local_id, entidad, entidad_id, accion, detalle }) {
     const sql = `
       INSERT INTO historial (usuario_id, local_id, entidad, entidad_id, accion, detalle, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
-      RETURNING *
+      VALUES ($1, $2, $3, $4, $5, $6, NOW()) RETURNING *
     `;
-    // entidad_id debe ser UUID válido o null
-    const entidadIdUuid = this._toUuidOrNull(entidad_id);
-
     const result = await db.query(sql, [
       usuario_id || null,
       local_id   || null,
       entidad    || null,
-      entidadIdUuid,
+      this._toUuidOrNull(entidad_id),
       accion     || null,
       detalle    ? JSON.stringify(detalle) : null,
     ]);
     return result.rows[0];
   }
 
-  async findAll({
-    usuario_id,
-    accion,
-    entidad,
-    fecha_inicio,
-    fecha_fin,
-    page  = 1,
-    limit = 20,
-    entidades_whitelist,
-  } = {}) {
+  async findAll({ usuario_id, accion, entidad, fecha_inicio, fecha_fin, page = 1, limit = 20, entidades_whitelist } = {}) {
     const values = [];
     let idx = 1;
     const conditions = [];
@@ -50,33 +34,27 @@ class HistorialRepository {
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const base  = `
-      FROM historial h
-      LEFT JOIN usuarios u ON h.usuario_id = u.id
-      ${where}
-    `;
+    const base  = `FROM historial h LEFT JOIN usuarios u ON h.usuario_id = u.id ${where}`;
 
     const countResult = await db.query(`SELECT COUNT(*) AS total ${base}`, values);
     const total = parseInt(countResult.rows[0].total);
 
-    const offset  = (parseInt(page) - 1) * parseInt(limit);
+    const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataSql = `
       SELECT h.id, h.usuario_id, h.entidad, h.entidad_id, h.accion, h.detalle, h.created_at,
              u.nombre AS usuario_nombre
-      ${base}
-      ORDER BY h.created_at DESC
+      ${base} ORDER BY h.created_at DESC
       LIMIT $${idx++} OFFSET $${idx++}
     `;
     values.push(parseInt(limit), offset);
-
     const dataResult = await db.query(dataSql, values);
     return { data: dataResult.rows, total };
   }
 
   _toUuidOrNull(value) {
     if (!value) return null;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(String(value)) ? String(value) : null;
+    const r = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return r.test(String(value)) ? String(value) : null;
   }
 }
 

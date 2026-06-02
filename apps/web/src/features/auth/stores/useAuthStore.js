@@ -41,7 +41,8 @@ export const useAuthStore = create((set) => ({
   checkAuth: () => {
     const user = authService.getCurrentUser();
     if (user) {
-      set({ user, isAuthenticated: true, isLoading: false });
+      const normalizedUser = { ...user, rol: (user.rol || "").toUpperCase() };
+      set({ user: normalizedUser, isAuthenticated: true, isLoading: false });
     } else {
       authService.logout();
       set({ isAuthenticated: false, isLoading: false });

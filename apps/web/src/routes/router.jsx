@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const rol = user?.rol?.toUpperCase();
+  const rol = (user?.rol || "").toUpperCase();
 
   if (allowedRoles && rol && !allowedRoles.includes(rol)) {
     switch (rol) {
@@ -106,14 +106,6 @@ export const router = createBrowserRouter([
     path: "/historial",
     element: (
       <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
-        <HistoryPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/empleado/historial",
-    element: (
-      <ProtectedRoute allowedRoles={["EMPLEADO"]}>
         <HistoryPage />
       </ProtectedRoute>
     ),

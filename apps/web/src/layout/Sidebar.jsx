@@ -39,8 +39,7 @@ const getNavItems = (rol) => {
   ];
 
   const empleadoItems = [
-    { path: "/empleado/pedidos",   label: "Mis Pedidos",  icon: FaShoppingCart },
-    { path: "/empleado/historial", label: "Mi Historial", icon: FaHistory       },
+    { path: "/empleado/pedidos", label: "Mis Pedidos", icon: FaShoppingCart },
   ];
 
   const settingsItem = { path: "#", label: "Configuración", icon: FaCog };
@@ -63,7 +62,7 @@ export const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems = getNavItems(user?.rol?.toUpperCase());
+  const navItems = getNavItems(user?.rol);
 
   const handleLogout = () => {
     logout();

@@ -25,21 +25,14 @@ const getProductoById = async (req, res) => {
 
 const createProducto = async (req, res) => {
   const { nombre, precio_venta, costo_produccion, categoria_id, insumos } = req.body;
-
   if (!nombre || !precio_venta) {
     return res.status(400).json({ message: 'Nombre y precio de venta son requeridos' });
   }
   if (costo_produccion && precio_venta && Number(costo_produccion) >= Number(precio_venta)) {
-    return res.status(400).json({
-      message: 'El costo de producción no puede ser mayor o igual al precio de venta',
-      warning: true,
-    });
+    return res.status(400).json({ message: 'El costo de producción no puede ser mayor o igual al precio de venta', warning: true });
   }
-
   try {
-    const producto = await productosService.create({
-      nombre, precio_venta, costo_produccion, categoria_id, insumos,
-    });
+    const producto = await productosService.create({ nombre, precio_venta, costo_produccion, categoria_id, insumos });
     res.status(201).json(producto);
   } catch (error) {
     console.error('Error creating producto:', error);
@@ -50,18 +43,11 @@ const createProducto = async (req, res) => {
 const updateProducto = async (req, res) => {
   const { id } = req.params;
   const { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos } = req.body;
-
   if (costo_produccion && precio_venta && Number(costo_produccion) >= Number(precio_venta)) {
-    return res.status(400).json({
-      message: 'El costo de producción no puede ser mayor o igual al precio de venta',
-      warning: true,
-    });
+    return res.status(400).json({ message: 'El costo de producción no puede ser mayor o igual al precio de venta', warning: true });
   }
-
   try {
-    const producto = await productosService.update(id, {
-      nombre, precio_venta, costo_produccion, categoria_id, activo, insumos,
-    });
+    const producto = await productosService.update(id, { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos });
     if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json(producto);
   } catch (error) {
@@ -102,12 +88,4 @@ const getCategorias = async (req, res) => {
   }
 };
 
-module.exports = {
-  getProductos,
-  getProductoById,
-  createProducto,
-  updateProducto,
-  deleteProducto,
-  getProductosConCostos,
-  getCategorias,
-};
+module.exports = { getProductos, getProductoById, createProducto, updateProducto, deleteProducto, getProductosConCostos, getCategorias };

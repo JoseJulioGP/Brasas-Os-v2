@@ -3,7 +3,7 @@ import api from "../../../services/api";
 export const menuService = {
   async getAll() {
     const { data } = await api.get("/productos");
-    return data?.data || data;
+    return Array.isArray(data) ? data : (data?.data || []);
   },
 
   async getWithCosts() {
@@ -28,6 +28,11 @@ export const menuService = {
 
   async remove(id) {
     const { data } = await api.delete(`/productos/${id}`);
+    return data;
+  },
+
+  async getCategorias() {
+    const { data } = await api.get("/productos/categorias");
     return data;
   },
 };

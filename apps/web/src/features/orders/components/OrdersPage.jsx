@@ -9,14 +9,13 @@ import { OrderCreateModal } from "./OrderCreateModal";
 
 export const OrdersPage = () => {
   const user = useAuthStore((s) => s.user);
-  const { orders, isLoading, error, fetchOrders, fetchAllOrders, createOrder, updateOrderStatus, cancelOrder, clearError } = useOrdersStore();
+  const { orders, isLoading, error, fetchOrders, fetchAllOrders, createOrder, updateOrderStatus, clearError } = useOrdersStore();
   const { items: menuItems, fetchAll: fetchMenu } = useMenuStore();
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("");
 
-  const rol = user?.rol?.toUpperCase();
-  const isAdminOrJefe = rol === "ADMIN" || rol === "JEFE";
+  const isAdminOrJefe = user?.rol === "ADMIN" || user?.rol === "JEFE";
 
   useEffect(() => {
     if (isAdminOrJefe) fetchAllOrders();
@@ -94,7 +93,7 @@ export const OrdersPage = () => {
         ) : (
           <div className="grid md:grid-cols-2 gap-4 animate-fade-in-up opacity-0 stagger-2">
             {filtered.map((order) => (
-              <OrderCard key={order.id} order={order} onStatusChange={updateOrderStatus} onCancel={rol === "ADMIN" ? cancelOrder : undefined} />
+              <OrderCard key={order.id} order={order} onStatusChange={updateOrderStatus} />
             ))}
           </div>
         )}
