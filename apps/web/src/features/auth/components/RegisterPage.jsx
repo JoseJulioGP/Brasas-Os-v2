@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Form } from "@heroui/react";
-import { FaUser, FaEnvelope, FaUserPlus } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaUserPlus, FaStore, FaUserTie, FaKey } from "react-icons/fa";
 import { useAuthStore } from "../stores/useAuthStore";
 import { AuthLayout } from "./AuthLayout";
 import { AuthBrandPanel } from "./AuthBrandPanel";
@@ -11,14 +11,32 @@ import { AuthPasswordInput } from "./AuthPasswordInput";
 import { AuthSubmitButton } from "./AuthSubmitButton";
 import { ErrorAlert } from "./ErrorAlert";
 
+const RoleCard = ({ icon: Icon, title, desc, selected, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all duration-200 font-body
+      ${selected
+        ? "bg-orange-500/10 border-orange-500/40 text-orange-400"
+        : "bg-white/[0.03] border-white/[0.08] text-white/50 hover:border-white/20 hover:text-white/70"
+      }`}
+  >
+    <Icon className="text-2xl" />
+    <span className="text-sm font-semibold">{title}</span>
+    <span className="text-[11px] text-center opacity-70">{desc}</span>
+  </button>
+);
+
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { register, isLoading, error, clearError } = useAuthStore();
 
-  const [nombre, setNombre] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [tipoRegistro, setTipoRegistro]       = useState("jefe");
+  const [nombre, setNombre]                   = useState("");
+  const [email, setEmail]                     = useState("");
+  const [password, setPassword]               = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [codigo, setCodigo]                   = useState("");
   const [validationError, setValidationError] = useState("");
 
   const handleSubmit = async (e) => {
@@ -30,20 +48,24 @@ export const RegisterPage = () => {
       setValidationError("Nombre, email y contraseña son requeridos");
       return;
     }
-
     if (password.length < 6) {
       setValidationError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
-
     if (password !== confirmPassword) {
       setValidationError("Las contraseñas no coinciden");
       return;
     }
+    if (tipoRegistro === "empleado") {
+      if (!codigo || codigo.length !== 6) {
+        setValidationError("El código de invitación debe tener 6 dígitos");
+        return;
+      }
+    }
 
     try {
-      await register(nombre, email, password);
-      navigate("/dashboard");
+      await register(nombre, email, password, tipoRegistro, tipoRegistro === "empleado" ? codigo : null);
+      navigate(tipoRegistro === "empleado" ? "/empleado/pedidos" : "/dashboard");
     } catch {}
   };
 
@@ -61,8 +83,25 @@ export const RegisterPage = () => {
       <AuthFormHeader
         icon={FaUserPlus}
         title="Crear Cuenta"
-        subtitle="Regístrate para empezar a gestionar"
+        subtitle="¿Cómo quieres registrarte?"
       />
+
+      <div className="flex gap-3 w-full max-w-md mx-auto mb-6">
+        <RoleCard
+          icon={FaUserTie}
+          title="Jefe"
+          desc="Crea y administra tu local"
+          selected={tipoRegistro === "jefe"}
+          onClick={() => { setTipoRegistro("jefe"); clearError(); setValidationError(""); }}
+        />
+        <RoleCard
+          icon={FaStore}
+          title="Empleado"
+          desc="Únete con código de invitación"
+          selected={tipoRegistro === "empleado"}
+          onClick={() => { setTipoRegistro("empleado"); clearError(); setValidationError(""); }}
+        />
+      </div>
 
       <ErrorAlert error={validationError || error} />
 
@@ -97,7 +136,6 @@ export const RegisterPage = () => {
             onChange={(e) => setPassword(e.target.value)}
             isRequired
           />
-
           <AuthPasswordInput
             label="Confirmar"
             labelPlacement="outside"
@@ -107,8 +145,30 @@ export const RegisterPage = () => {
           />
         </div>
 
+        {tipoRegistro === "empleado" && (
+          <div className="w-full">
+            <label className="block text-xs text-white/50 font-body mb-1.5">
+              Código de invitación
+            </label>
+            <div className="relative">
+              <FaKey className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="000000"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-number tracking-[0.4em] text-center"
+              />
+            </div>
+            <p className="text-[11px] text-white/30 font-body mt-1">
+              Pídele el código de 6 dígitos al jefe de tu local
+            </p>
+          </div>
+        )}
+
         <AuthSubmitButton isLoading={isLoading}>
-          Crear cuenta
+          {tipoRegistro === "empleado" ? "Unirme al local" : "Crear mi local"}
         </AuthSubmitButton>
       </Form>
 
@@ -117,11 +177,6 @@ export const RegisterPage = () => {
         <Link to="/login" className="text-orange-400 hover:underline font-semibold">
           Inicia sesión
         </Link>
-      </p>
-
-      <p className="mt-8 text-center text-[10px] text-white/30 font-body px-8">
-        Al registrarte, aceptas nuestros términos de servicio y políticas de
-        privacidad para el sistema de gestión de restaurantes.
       </p>
     </AuthLayout>
   );

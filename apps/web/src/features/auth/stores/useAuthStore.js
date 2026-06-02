@@ -20,10 +20,10 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  register: async (nombre, email, password) => {
+  register: async (nombre, email, password, tipo_registro = "jefe", codigo_invitacion = null) => {
     set({ isLoading: true, error: null });
     try {
-      const user = await authService.register(nombre, email, password);
+      const user = await authService.register(nombre, email, password, tipo_registro, codigo_invitacion);
       set({ user, isAuthenticated: true, isLoading: false });
       return user;
     } catch (error) {
