@@ -101,7 +101,7 @@ const updateEstado = async (req, res) => {
     let pedidoActualizado;
 
     if (estado === 'entregado') {
-      pedidoActualizado = await pedidosService.completarPedido(id);
+      pedidoActualizado = await pedidosService.completarPedido(id, req.user.id, req.user.local_id);
     } else {
       pedidoActualizado = await pedidosService.updateEstado(id, estado);
     }
@@ -161,7 +161,7 @@ const updatePedido = async (req, res) => {
 const cancelPedido = async (req, res) => {
   const { id } = req.params;
   try {
-    const resultado = await pedidosService.cancelPedido(id);
+    const resultado = await pedidosService.cancelPedido(id, req.user.id, req.user.local_id);
     if (!resultado) return res.status(404).json({ message: 'Pedido no encontrado' });
     res.status(200).json({ message: 'Pedido cancelado correctamente' });
   } catch (error) {

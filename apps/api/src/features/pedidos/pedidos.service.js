@@ -103,13 +103,13 @@ class PedidosService {
     finally { client.release(); }
   }
 
-  async cancelPedido(id) {
+  async cancelPedido(id, usuario_id, local_id) {
     const r = await db.query(`UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`, [id]);
-    if (r.rows[0]) historialService.registrar({ tipo_accion: TIPOS_ACCION.CANCELAR, entidad: ENTIDADES.PEDIDOS, entidad_id: id, descripcion: `Pedido cancelado [${id}]` }).catch(() => {});
+    if (r.rows[0]) historialService.registrar({ usuario_id, local_id, tipo_accion: TIPOS_ACCION.CANCELAR, entidad: ENTIDADES.PEDIDOS, entidad_id: id, descripcion: `Pedido cancelado [${id}]` }).catch(() => {});
     return r.rows[0];
   }
 
-  async completarPedido(pedidoId) {
+  async completarPedido(pedidoId, usuario_id, local_id) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
@@ -128,7 +128,7 @@ class PedidosService {
         }
       }
       await client.query('COMMIT');
-      historialService.registrar({ tipo_accion: TIPOS_ACCION.COMPLETAR, entidad: ENTIDADES.PEDIDOS, entidad_id: pedidoId, descripcion: `Pedido completado [${pedidoId}]` }).catch(() => {});
+      historialService.registrar({ usuario_id, local_id, tipo_accion: TIPOS_ACCION.COMPLETAR, entidad: ENTIDADES.PEDIDOS, entidad_id: pedidoId, descripcion: `Pedido completado [${pedidoId}]` }).catch(() => {});
       return pedidoResult.rows[0];
     } catch (err) { await client.query('ROLLBACK'); throw err; }
     finally { client.release(); }
