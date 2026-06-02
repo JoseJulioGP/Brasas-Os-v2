@@ -9,6 +9,7 @@ router.get('/insumos/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventa
 router.get('/insumos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.getInsumos);
 router.post('/insumos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createInsumo);
 router.put('/insumos/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.updateInsumo);
+router.delete('/insumos/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.deleteInsumo);
 
 // === MOVIMIENTOS ===
 router.post('/entrada', verifyToken, requireAnyRole('JEFE', 'ADMIN'), inventarioController.createEntrada);

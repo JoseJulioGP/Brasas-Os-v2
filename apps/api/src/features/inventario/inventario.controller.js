@@ -56,6 +56,18 @@ const updateInsumo = async (req, res) => {
   }
 };
 
+const deleteInsumo = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deleted = await inventarioService.deleteInsumo(id, req.user.local_id);
+    if (!deleted) return res.status(404).json({ message: 'Insumo no encontrado' });
+    res.status(200).json({ message: 'Insumo eliminado correctamente' });
+  } catch (error) {
+    console.error('Error deleting insumo:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
 // T-23: solo ADMIN puede tocar stock_minimo
 const updateStockMinimo = async (req, res) => {
   const { id } = req.params;
@@ -143,6 +155,7 @@ module.exports = {
   getInsumoById,
   createInsumo,
   updateInsumo,
+  deleteInsumo,
   updateStockMinimo,
   getMovimientos,
   createEntrada,

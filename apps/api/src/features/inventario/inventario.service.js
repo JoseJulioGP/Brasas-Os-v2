@@ -61,6 +61,14 @@ class InventarioService {
     return result.rows[0];
   }
 
+  async deleteInsumo(id, local_id) {
+    const result = await db.query(
+      `DELETE FROM insumos WHERE id = $1 AND local_id = $2 RETURNING id`,
+      [id, local_id]
+    );
+    return result.rows[0] || null;
+  }
+
   async updateStockMinimo(id, stock_minimo, local_id) {
     const result = await db.query(
       `UPDATE insumos SET stock_minimo = $1 WHERE id = $2 AND local_id = $3 RETURNING *`,
