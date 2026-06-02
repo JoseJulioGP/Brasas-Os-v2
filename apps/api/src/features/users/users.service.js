@@ -12,7 +12,7 @@ class UsersService {
         }
         const password_hash = await bcrypt.hash(password, 10);
         const result = await db.query(
-            `INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, creado_at)
+            `INSERT INTO usuarios (nombre, email, password_hash, rol_id, activo, created_at)
             VALUES ($1, $2, $3, $4, true, NOW())
             RETURNING id, nombre, email, rol_id, activo`,
             [nombre, email, password_hash, rol_id],
