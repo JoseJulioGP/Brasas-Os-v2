@@ -2,20 +2,20 @@ export const TIPOS_ACCION = ['CREAR', 'EDITAR', 'ELIMINAR', 'LOGIN', 'LOGOUT', '
 
 export const historyViewConfig = {
   ADMIN: {
-    filters:  ['usuario_id', 'rol', 'tipo_accion', 'entidad', 'fecha_inicio', 'fecha_fin'],
-    columns:  ['usuario', 'rol', 'tipo_accion', 'entidad', 'entidad_id', 'descripcion', 'fecha'],
+    filters:   ['usuario_id', 'accion', 'entidad', 'fecha_inicio', 'fecha_fin'],
+    columns:   ['id', 'usuario', 'accion', 'entidad', 'entidad_id', 'detalle', 'created_at'],
     entidades: ['productos', 'pedidos', 'carnes', 'insumos', 'inventario', 'usuarios', 'auth'],
     emptyMessage: 'No hay acciones registradas.',
   },
   JEFE: {
-    filters:  ['tipo_accion', 'entidad', 'fecha_inicio', 'fecha_fin'],
-    columns:  ['usuario', 'tipo_accion', 'entidad', 'entidad_id', 'descripcion', 'fecha'],
+    filters:   ['accion', 'entidad', 'fecha_inicio', 'fecha_fin'],
+    columns:   ['id', 'usuario', 'accion', 'entidad', 'entidad_id', 'detalle', 'created_at'],
     entidades: ['pedidos', 'inventario', 'carnes', 'insumos', 'productos'],
     emptyMessage: 'No hay acciones operativas registradas.',
   },
   EMPLEADO: {
-    filters:  ['tipo_accion', 'fecha_inicio', 'fecha_fin'],
-    columns:  ['tipo_accion', 'entidad', 'descripcion', 'fecha'],
+    filters:   ['accion', 'fecha_inicio', 'fecha_fin'],
+    columns:   ['id', 'accion', 'entidad', 'detalle', 'created_at'],
     entidades: [],
     emptyMessage: 'Aún no tienes acciones registradas en tu historial.',
   },
