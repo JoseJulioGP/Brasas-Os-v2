@@ -21,24 +21,23 @@ const login = async (req, res) => {
   }
 };
 const register = async (req, res) => {
-  const { nombre, email, password } = req.body;
+  const { nombre, email, password, tipo_registro = 'jefe', codigo_invitacion } = req.body;
   if (!nombre || !email || !password) {
-    return res.status(400).json({
-      message: "Nombre, email y contraseña son requeridos",
-    });
+    return res.status(400).json({ message: "Nombre, email y contraseña son requeridos" });
   }
   if (password.length < 6) {
-    return res.status(400).json({
-      message: "La contraseña debe tener al menos 6 caracteres",
-    });
+    return res.status(400).json({ message: "La contraseña debe tener al menos 6 caracteres" });
+  }
+  if (tipo_registro === 'empleado' && !codigo_invitacion) {
+    return res.status(400).json({ message: "El código de invitación es requerido para empleados" });
   }
   try {
-    const result = await authService.register({ nombre, email, password });
+    const result = await authService.register({ nombre, email, password, tipo_registro, codigo_invitacion });
     res.status(201).json(result);
   } catch (error) {
-    if (error.message === "EMAIL_EXISTS") {
-      return res.status(409).json({ message: "El email ya está registrado" });
-    }
+    if (error.message === "EMAIL_EXISTS")     return res.status(409).json({ message: "El email ya está registrado" });
+    if (error.message === "CODIGO_INVALIDO")  return res.status(400).json({ message: "Código de invitación inválido o expirado" });
+    if (error.message === "ROLE_NOT_FOUND")   return res.status(500).json({ message: "Error al asignar rol" });
     console.error("Error en registro:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }

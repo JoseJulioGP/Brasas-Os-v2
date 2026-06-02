@@ -89,9 +89,36 @@ class UsersService {
     }
     async deactivateUser(id) {
         const user = await this.getUserById(id);
-
         await db.query("UPDATE usuarios SET activo = false WHERE id = $1", [id]);
-    return { message: "Usuario desactivado correctamente" };
+        return { message: "Usuario desactivado correctamente" };
+    }
+
+    async getCodigoInvitacion(userId) {
+        const result = await db.query(
+            "SELECT codigo_invitacion FROM usuarios WHERE id = $1",
+            [userId]
+        );
+        return result.rows[0] || null;
+    }
+
+    async generarCodigoInvitacion(userId) {
+        let codigo;
+        let intentos = 0;
+        do {
+            codigo = String(Math.floor(100000 + Math.random() * 900000));
+            const existe = await db.query(
+                "SELECT id FROM usuarios WHERE codigo_invitacion = $1",
+                [codigo]
+            );
+            if (existe.rows.length === 0) break;
+            intentos++;
+        } while (intentos < 10);
+
+        const result = await db.query(
+            "UPDATE usuarios SET codigo_invitacion = $1 WHERE id = $2 RETURNING codigo_invitacion",
+            [codigo, userId]
+        );
+        return result.rows[0];
     }
 }
 module.exports = new UsersService();

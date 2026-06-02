@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const usersController = require('./users.controller');
-const { verifyToken, requireRole } = require('../../shared/middlewares/auth.middleware');
+const { verifyToken, requireRole, requireAnyRole } = require('../../shared/middlewares/auth.middleware');
 
-// TODOS los endpoints de usuarios requieren token y rol ADMIN
-router.use(verifyToken);
-router.use(requireRole('ADMIN'));
+// Código de invitación — accesible para JEFE y ADMIN
+router.get('/codigo-invitacion',  verifyToken, requireAnyRole('JEFE', 'ADMIN'), usersController.getCodigoInvitacion);
+router.post('/codigo-invitacion', verifyToken, requireAnyRole('JEFE', 'ADMIN'), usersController.generarCodigoInvitacion);
 
-router.post('/', usersController.createUser);
-router.get('/', usersController.getUsers);
-router.get('/:id', usersController.getUserById);
-router.put('/:id', usersController.updateUser);
-router.delete('/:id', usersController.deactivateUser); // Soft delete
+// CRUD de usuarios — solo ADMIN
+router.post('/',    verifyToken, requireRole('ADMIN'), usersController.createUser);
+router.get('/',     verifyToken, requireRole('ADMIN'), usersController.getUsers);
+router.get('/:id',  verifyToken, requireRole('ADMIN'), usersController.getUserById);
+router.put('/:id',  verifyToken, requireRole('ADMIN'), usersController.updateUser);
+router.delete('/:id', verifyToken, requireRole('ADMIN'), usersController.deactivateUser);
 
 module.exports = router;

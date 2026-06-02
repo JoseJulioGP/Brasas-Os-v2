@@ -32,28 +32,53 @@ class AuthService {
     return { token, user };
   }
 
-  async register({ nombre, email, password }) {
+  async register({ nombre, email, password, tipo_registro = 'jefe', codigo_invitacion = null }) {
     const exists = await db.query('SELECT id FROM usuarios WHERE email = $1', [email]);
     if (exists.rows.length > 0) throw new Error('EMAIL_EXISTS');
 
+    const password_hash = await bcrypt.hash(password, 10);
+
+    if (tipo_registro === 'empleado') {
+      // Buscar el local_id del jefe dueño del código
+      const jefeResult = await db.query(
+        `SELECT u.local_id, r.id AS rol_id FROM usuarios u
+         JOIN roles r ON u.rol_id = r.id
+         WHERE u.codigo_invitacion = $1 AND u.activo = true`,
+        [codigo_invitacion]
+      );
+      if (!jefeResult.rows[0]) throw new Error('CODIGO_INVALIDO');
+      const { local_id } = jefeResult.rows[0];
+
+      const rolEmpleado = await db.query("SELECT id FROM roles WHERE nombre = 'empleado'");
+      if (!rolEmpleado.rows[0]) throw new Error('ROLE_NOT_FOUND');
+      const rol_id = rolEmpleado.rows[0].id;
+
+      const insert = await db.query(
+        `INSERT INTO usuarios (local_id, rol_id, nombre, email, password_hash, activo, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING id, nombre, email, local_id`,
+        [local_id, rol_id, nombre, email, password_hash]
+      );
+      const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'empleado', local_id };
+      const token = signToken({ id: user.id, rol: user.rol, rol_id, local_id, email: user.email });
+      return { token, user };
+    }
+
+    // Registro como JEFE — crea su propio local
     const rolResult = await db.query("SELECT id FROM roles WHERE nombre = 'jefe'");
     if (!rolResult.rows[0]) throw new Error('ROLE_NOT_FOUND');
     const rol_id = rolResult.rows[0].id;
 
-    // Crear un local propio para el nuevo usuario
     const localResult = await db.query(
       `INSERT INTO locales (nombre, activo, created_at, updated_at) VALUES ($1, true, NOW(), NOW()) RETURNING id`,
       [`Local de ${nombre}`]
     );
     const local_id = localResult.rows[0].id;
 
-    const password_hash = await bcrypt.hash(password, 10);
     const insert = await db.query(
       `INSERT INTO usuarios (local_id, rol_id, nombre, email, password_hash, activo, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING id, nombre, email, local_id`,
       [local_id, rol_id, nombre, email, password_hash]
     );
-
     const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'jefe', local_id };
     const token = signToken({ id: user.id, rol: user.rol, rol_id, local_id, email: user.email });
     return { token, user };
