@@ -25,23 +25,26 @@ class UsersService {
         delete user.password_hash;
         return user;
     }
-    async getUsers() {
+    async getUsers(local_id) {
         const result = await db.query(
-            `SELECT u.id, u.nombre, u.email, u.activo, u.creado_at, r.nombre as rol_nombre
+            `SELECT u.id, u.nombre, u.email, u.activo, u.created_at, r.nombre as rol_nombre
             FROM usuarios u
             JOIN roles r ON u.rol_id = r.id
-            WHERE u.activo = true
-            ORDER BY u.creado_at DESC`,
+            WHERE u.activo = true AND u.local_id = $1
+            ORDER BY u.created_at DESC`,
+            [local_id],
         );
         return result.rows;
     }
-    async getUserById(id) {
+    async getUserById(id, local_id) {
+        const conditions = local_id ? 'WHERE u.id = $1 AND u.local_id = $2' : 'WHERE u.id = $1';
+        const params = local_id ? [id, local_id] : [id];
         const result = await db.query(
-            `SELECT u.id, u.nombre, u.email, u.activo, u.creado_at, r.nombre as rol_nombre
+            `SELECT u.id, u.nombre, u.email, u.activo, u.created_at, r.nombre as rol_nombre
             FROM usuarios u
             JOIN roles r ON u.rol_id = r.id
-            WHERE u.id = $1`,
-            [id],
+            ${conditions}`,
+            params,
         );
 
         if (result.rows.length === 0) {
@@ -50,8 +53,8 @@ class UsersService {
 
         return result.rows[0];
     }
-    async updateUser(id, { nombre, email, rol_id, activo }) {
-        const existingUser = await this.getUserById(id);
+    async updateUser(id, { nombre, email, rol_id, activo }, local_id) {
+        const existingUser = await this.getUserById(id, local_id);
 
         const updates = [];
         const values = [];
@@ -85,7 +88,7 @@ class UsersService {
         values.push(id);
         const query = `UPDATE usuarios SET ${updates.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
         await db.query(query, values);
-        return this.getUserById(id);
+        return this.getUserById(id, local_id);
     }
     async deactivateUser(id) {
         const user = await this.getUserById(id);

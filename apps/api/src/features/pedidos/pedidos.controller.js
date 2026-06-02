@@ -34,9 +34,9 @@ const getPedidos = async (req, res) => {
   try {
     let pedidos;
     if (rol === 'EMPLEADO') {
-      pedidos = await pedidosService.getPedidosByEmpleado(empleado_id);
+      pedidos = await pedidosService.getPedidosByEmpleado(empleado_id, req.user.local_id);
     } else {
-      pedidos = await pedidosService.getAllPedidos();
+      pedidos = await pedidosService.getAllPedidos(req.user.local_id);
     }
     res.status(200).json(pedidos);
   } catch (error) {
@@ -131,7 +131,7 @@ const updateEstado = async (req, res) => {
 const getAllPedidos = async (req, res) => {
   const { fecha_inicio, fecha_fin, estado, empleado_id } = req.query;
   try {
-    const pedidos = await pedidosService.getAllWithFilters({ fecha_inicio, fecha_fin, estado, empleado_id });
+    const pedidos = await pedidosService.getAllWithFilters({ fecha_inicio, fecha_fin, estado, empleado_id, local_id: req.user.local_id });
     res.status(200).json(pedidos);
   } catch (error) {
     console.error('Error getting all pedidos:', error);

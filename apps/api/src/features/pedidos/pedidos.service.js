@@ -42,19 +42,33 @@ class PedidosService {
     return pedido;
   }
 
-  async getPedidosByEmpleado(empleado_id) {
-    const r = await db.query(`SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p LEFT JOIN usuarios u ON p.empleado_id = u.id WHERE p.empleado_id = $1 ORDER BY p.created_at DESC`, [empleado_id]);
+  async getPedidosByEmpleado(empleado_id, local_id) {
+    const r = await db.query(
+      `SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p
+       LEFT JOIN usuarios u ON p.empleado_id = u.id
+       WHERE p.empleado_id = $1 AND u.local_id = $2
+       ORDER BY p.created_at DESC`,
+      [empleado_id, local_id]
+    );
     return r.rows;
   }
 
-  async getAllPedidos() {
-    const r = await db.query(`SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p LEFT JOIN usuarios u ON p.empleado_id = u.id ORDER BY p.created_at DESC`);
+  async getAllPedidos(local_id) {
+    const r = await db.query(
+      `SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p
+       LEFT JOIN usuarios u ON p.empleado_id = u.id
+       WHERE u.local_id = $1
+       ORDER BY p.created_at DESC`,
+      [local_id]
+    );
     return r.rows;
   }
 
   async getAllWithFilters(filtros = {}) {
-    let sql = `SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p LEFT JOIN usuarios u ON p.empleado_id = u.id WHERE 1=1`;
-    const values = []; let i = 1;
+    let sql = `SELECT p.*, u.nombre AS empleado_nombre FROM pedidos p
+               LEFT JOIN usuarios u ON p.empleado_id = u.id
+               WHERE u.local_id = $1`;
+    const values = [filtros.local_id]; let i = 2;
     if (filtros.estado)       { sql += ` AND p.estado = $${i++}`;      values.push(filtros.estado); }
     if (filtros.empleado_id)  { sql += ` AND p.empleado_id = $${i++}`; values.push(filtros.empleado_id); }
     if (filtros.fecha_inicio) { sql += ` AND p.created_at >= $${i++}`; values.push(filtros.fecha_inicio); }

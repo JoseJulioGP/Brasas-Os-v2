@@ -24,7 +24,7 @@ const createUser = async (req, res) => {
 };
 const getUsers = async (req, res) => {
   try {
-    const users = await usersService.getUsers();
+    const users = await usersService.getUsers(req.user.local_id);
     res.status(200).json(users);
   } catch (error) {
     console.error("Error getting users:", error);
@@ -34,7 +34,7 @@ const getUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
-    const user = await usersService.getUserById(id);
+    const user = await usersService.getUserById(id, req.user.local_id);
     res.status(200).json(user);
   } catch (error) {
     if (error.message === "USER_NOT_FOUND") {
@@ -48,12 +48,7 @@ const updateUser = async (req, res) => {
   const { id } = req.params;
   const { nombre, email, rol_id, activo } = req.body;
   try {
-    const user = await usersService.updateUser(id, {
-      nombre,
-      email,
-      rol_id,
-      activo,
-    });
+    const user = await usersService.updateUser(id, { nombre, email, rol_id, activo }, req.user.local_id);
     res.status(200).json(user);
   } catch (error) {
     if (error.message === "EMAIL_ALREADY_EXISTS") {

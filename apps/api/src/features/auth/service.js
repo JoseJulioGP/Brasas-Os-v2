@@ -24,8 +24,9 @@ class AuthService {
 
     await db.query('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = $1', [usuario.id]);
 
-    const user = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol_nombre, local_id: usuario.local_id };
-    const token = signToken({ id: user.id, rol: user.rol, rol_id: usuario.rol_id, email: user.email });
+    const rol = (usuario.rol_nombre || '').toUpperCase();
+    const user = { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol, local_id: usuario.local_id };
+    const token = signToken({ id: user.id, rol, rol_id: usuario.rol_id, local_id: usuario.local_id, email: user.email });
 
     historialService.registrar({ usuario_id: usuario.id, local_id: usuario.local_id, tipo_accion: TIPOS_ACCION.LOGIN, entidad: ENTIDADES.AUTH, entidad_id: usuario.id, descripcion: `LOGIN de ${usuario.email}` }).catch(() => {});
 
@@ -58,8 +59,8 @@ class AuthService {
          VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING id, nombre, email, local_id`,
         [local_id, rol_id, nombre, email, password_hash]
       );
-      const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'empleado', local_id };
-      const token = signToken({ id: user.id, rol: user.rol, rol_id, local_id, email: user.email });
+      const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'EMPLEADO', local_id };
+      const token = signToken({ id: user.id, rol: 'EMPLEADO', rol_id, local_id, email: user.email });
       return { token, user };
     }
 
@@ -79,8 +80,8 @@ class AuthService {
        VALUES ($1, $2, $3, $4, $5, true, NOW(), NOW()) RETURNING id, nombre, email, local_id`,
       [local_id, rol_id, nombre, email, password_hash]
     );
-    const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'jefe', local_id };
-    const token = signToken({ id: user.id, rol: user.rol, rol_id, local_id, email: user.email });
+    const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'JEFE', local_id };
+    const token = signToken({ id: user.id, rol: 'JEFE', rol_id, local_id, email: user.email });
     return { token, user };
   }
 }
