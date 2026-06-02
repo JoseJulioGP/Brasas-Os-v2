@@ -3,6 +3,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 require("dotenv").config();
 const { auditMiddleware } = require("./shared/middlewares/audit.middleware");
+const swaggerUi   = require("swagger-ui-express");
+const swaggerSpec = require("./shared/swagger/swagger");
 const app = express();
 
 app.use(helmet());
@@ -17,6 +19,22 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(auditMiddleware);
+
+// Swagger UI — equivalente al Swagger de .NET en Visual Studio
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customSiteTitle: "Brasas OS API",
+  swaggerOptions: {
+    persistAuthorization: true,
+    tryItOutEnabled: true,
+    docExpansion: "none",
+    filter: true,
+    tagsSorter: (a, b) => {
+      if (a === "Auth") return -1;
+      if (b === "Auth") return 1;
+      return a.localeCompare(b);
+    },
+  },
+}));
 
 app.use("/api/v1/auth",       require("./features/auth/routes"));
 app.use("/api/v1/usuarios",   require("./features/users/users.routes"));
