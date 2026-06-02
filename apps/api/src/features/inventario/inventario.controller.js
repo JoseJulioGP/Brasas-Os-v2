@@ -4,7 +4,7 @@ const inventarioService = require('./inventario.service');
 
 const getInsumos = async (req, res) => {
   try {
-    const insumos = await inventarioService.getInsumos();
+    const insumos = await inventarioService.getInsumos(req.user.local_id);
     res.status(200).json(insumos);
   } catch (error) {
     console.error('Error getting insumos:', error);
@@ -15,7 +15,7 @@ const getInsumos = async (req, res) => {
 const getInsumoById = async (req, res) => {
   const { id } = req.params;
   try {
-    const insumo = await inventarioService.getInsumoById(id);
+    const insumo = await inventarioService.getInsumoById(id, req.user.local_id);
     if (!insumo) return res.status(404).json({ message: 'Insumo no encontrado' });
     res.status(200).json(insumo);
   } catch (error) {
@@ -32,6 +32,7 @@ const createInsumo = async (req, res) => {
   try {
     const insumo = await inventarioService.createInsumo({
       nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_unitario_prom,
+      local_id: req.user.local_id,
     });
     res.status(201).json(insumo);
   } catch (error) {
@@ -46,7 +47,7 @@ const updateInsumo = async (req, res) => {
   try {
     const insumo = await inventarioService.updateInsumo(id, {
       nombre, tipo, unidad_medida, stock_actual, costo_unitario_prom, activo,
-    });
+    }, req.user.local_id);
     if (!insumo) return res.status(404).json({ message: 'Insumo no encontrado' });
     res.status(200).json(insumo);
   } catch (error) {
@@ -63,7 +64,7 @@ const updateStockMinimo = async (req, res) => {
     return res.status(400).json({ message: 'stock_minimo debe ser un número >= 0' });
   }
   try {
-    const insumo = await inventarioService.updateStockMinimo(id, stock_minimo);
+    const insumo = await inventarioService.updateStockMinimo(id, stock_minimo, req.user.local_id);
     if (!insumo) return res.status(404).json({ message: 'Insumo no encontrado' });
     res.status(200).json(insumo);
   } catch (error) {
@@ -77,7 +78,7 @@ const updateStockMinimo = async (req, res) => {
 const getMovimientos = async (req, res) => {
   const { insumo_id, tipo, fecha_inicio, fecha_fin } = req.query;
   try {
-    const movimientos = await inventarioService.getMovimientos({ insumo_id, tipo, fecha_inicio, fecha_fin });
+    const movimientos = await inventarioService.getMovimientos({ insumo_id, tipo, fecha_inicio, fecha_fin, local_id: req.user.local_id });
     res.status(200).json(movimientos);
   } catch (error) {
     console.error('Error getting movimientos:', error);
@@ -94,6 +95,7 @@ const createEntrada = async (req, res) => {
     const resultado = await inventarioService.createMovimiento({
       insumo_id,
       usuario_id: req.user.id,
+      local_id: req.user.local_id,
       tipo: 'entrada',
       cantidad,
       costo_unitario,
@@ -118,6 +120,7 @@ const createSalida = async (req, res) => {
     const resultado = await inventarioService.createMovimiento({
       insumo_id,
       usuario_id: req.user.id,
+      local_id: req.user.local_id,
       tipo: 'salida',
       cantidad,
       motivo,

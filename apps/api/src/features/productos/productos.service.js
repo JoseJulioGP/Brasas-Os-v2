@@ -3,8 +3,8 @@ const db = require('../../shared/database/db');
 class ProductosService {
 
   async getAll(filtros = {}) {
-    let sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.activo = true`;
-    const values = []; let idx = 1;
+    let sql = `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.activo = true AND p.local_id = $1`;
+    const values = [filtros.local_id]; let idx = 2;
     if (filtros.categoria_id) { sql += ` AND p.categoria_id = $${idx++}`; values.push(filtros.categoria_id); }
     sql += ` ORDER BY p.nombre`;
     if (filtros.limit)  { sql += ` LIMIT $${idx++}`;  values.push(parseInt(filtros.limit)); }
@@ -12,10 +12,10 @@ class ProductosService {
     return (await db.query(sql, values)).rows;
   }
 
-  async getById(id) {
+  async getById(id, local_id) {
     const result = await db.query(
-      `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id = $1 AND p.activo = true`,
-      [id]
+      `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, p.activo, p.local_id, p.categoria_id, p.created_at, p.updated_at, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.id = $1 AND p.local_id = $2 AND p.activo = true`,
+      [id, local_id]
     );
     if (!result.rows[0]) return null;
     const producto = result.rows[0];
@@ -23,8 +23,11 @@ class ProductosService {
     return producto;
   }
 
-  async getAllWithCostos() {
-    return (await db.query(`SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, CASE WHEN COALESCE(p.costo_produccion,0) > 0 THEN ROUND((p.precio_venta - p.costo_produccion)/p.costo_produccion*100,2) ELSE 0 END AS porcentaje_margen, p.activo, p.categoria_id, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.activo = true ORDER BY margen DESC`)).rows;
+  async getAllWithCostos(local_id) {
+    return (await db.query(
+      `SELECT p.id, p.nombre, p.precio_venta, p.costo_produccion, COALESCE(p.margen, p.precio_venta - COALESCE(p.costo_produccion,0)) AS margen, CASE WHEN COALESCE(p.costo_produccion,0) > 0 THEN ROUND((p.precio_venta - p.costo_produccion)/p.costo_produccion*100,2) ELSE 0 END AS porcentaje_margen, p.activo, p.categoria_id, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.activo = true AND p.local_id = $1 ORDER BY margen DESC`,
+      [local_id]
+    )).rows;
   }
 
   async create(data) {
@@ -42,12 +45,12 @@ class ProductosService {
         }
       }
       await client.query('COMMIT');
-      return this.getById(producto.id);
+      return this.getById(producto.id, data.local_id);
     } catch (error) { await client.query('ROLLBACK'); throw error; }
     finally { client.release(); }
   }
 
-  async update(id, data) {
+  async update(id, data, local_id) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
@@ -57,19 +60,19 @@ class ProductosService {
       if (data.costo_produccion !== undefined) { campos.push(`costo_produccion = $${i++}`); valores.push(data.costo_produccion); }
       if (data.categoria_id     !== undefined) { campos.push(`categoria_id = $${i++}`);     valores.push(data.categoria_id || null); }
       if (data.activo           !== undefined) { campos.push(`activo = $${i++}`);            valores.push(data.activo); }
-      if (campos.length > 0) { campos.push(`updated_at = NOW()`); valores.push(id); await client.query(`UPDATE productos SET ${campos.join(', ')} WHERE id = $${i}`, valores); }
+      if (campos.length > 0) { campos.push(`updated_at = NOW()`); valores.push(id, local_id); await client.query(`UPDATE productos SET ${campos.join(', ')} WHERE id = $${i} AND local_id = $${i + 1}`, valores); }
       await client.query('DELETE FROM producto_insumos WHERE producto_id = $1', [id]);
       if (Array.isArray(data.insumos) && data.insumos.length > 0) {
         for (const ins of data.insumos) await client.query(`INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`, [id, ins.insumo_id, ins.cantidad_requerida]);
       }
       await client.query('COMMIT');
-      return this.getById(id);
+      return this.getById(id, local_id);
     } catch (error) { await client.query('ROLLBACK'); throw error; }
     finally { client.release(); }
   }
 
-  async delete(id) {
-    return (await db.query(`UPDATE productos SET activo = false, updated_at = NOW() WHERE id = $1 RETURNING id`, [id])).rows[0];
+  async delete(id, local_id) {
+    return (await db.query(`UPDATE productos SET activo = false, updated_at = NOW() WHERE id = $1 AND local_id = $2 RETURNING id`, [id, local_id])).rows[0];
   }
 
   async getCategorias() {

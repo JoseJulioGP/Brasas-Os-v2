@@ -4,30 +4,31 @@ class InventarioService {
 
   // === INSUMOS ===
 
-  async getInsumos() {
+  async getInsumos(local_id) {
     const sql = `SELECT id, nombre, tipo, unidad_medida, stock_actual, stock_minimo,
                         costo_unitario_prom, activo, created_at
                  FROM insumos
-                 WHERE activo = true
+                 WHERE activo = true AND local_id = $1
                  ORDER BY nombre`;
-    const result = await db.query(sql);
+    const result = await db.query(sql, [local_id]);
     return result.rows;
   }
 
-  async getInsumoById(id) {
+  async getInsumoById(id, local_id) {
     const sql = `SELECT id, nombre, tipo, unidad_medida, stock_actual, stock_minimo,
                         costo_unitario_prom, activo, created_at
                  FROM insumos
-                 WHERE id = $1`;
-    const result = await db.query(sql, [id]);
+                 WHERE id = $1 AND local_id = $2`;
+    const result = await db.query(sql, [id, local_id]);
     return result.rows[0];
   }
 
   async createInsumo(data) {
-    const sql = `INSERT INTO insumos (nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_unitario_prom, activo)
-                 VALUES ($1, $2, $3, $4, $5, $6, true)
+    const sql = `INSERT INTO insumos (local_id, nombre, tipo, unidad_medida, stock_actual, stock_minimo, costo_unitario_prom, activo)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, true)
                  RETURNING *`;
     const result = await db.query(sql, [
+      data.local_id            || null,
       data.nombre,
       data.tipo                || 'insumo',
       data.unidad_medida,
@@ -38,7 +39,7 @@ class InventarioService {
     return result.rows[0];
   }
 
-  async updateInsumo(id, data) {
+  async updateInsumo(id, data, local_id) {
     const updates = [];
     const values  = [];
     let i = 1;
@@ -52,19 +53,18 @@ class InventarioService {
 
     if (updates.length === 0) return null;
 
-    values.push(id);
+    values.push(id, local_id);
     const result = await db.query(
-      `UPDATE insumos SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+      `UPDATE insumos SET ${updates.join(', ')} WHERE id = $${i} AND local_id = $${i + 1} RETURNING *`,
       values
     );
     return result.rows[0];
   }
 
-  // T-23: stock_minimo solo lo modifica el ADMIN
-  async updateStockMinimo(id, stock_minimo) {
+  async updateStockMinimo(id, stock_minimo, local_id) {
     const result = await db.query(
-      `UPDATE insumos SET stock_minimo = $1 WHERE id = $2 RETURNING *`,
-      [stock_minimo, id]
+      `UPDATE insumos SET stock_minimo = $1 WHERE id = $2 AND local_id = $3 RETURNING *`,
+      [stock_minimo, id, local_id]
     );
     return result.rows[0];
   }
@@ -75,9 +75,9 @@ class InventarioService {
     let sql = `SELECT sm.*, i.nombre as insumo_nombre, i.unidad_medida
                FROM stock_movimientos sm
                LEFT JOIN insumos i ON sm.insumo_id = i.id
-               WHERE 1=1`;
-    const values = [];
-    let i = 1;
+               WHERE i.local_id = $1`;
+    const values = [filtros.local_id];
+    let i = 2;
 
     if (filtros.insumo_id)    { sql += ` AND sm.insumo_id = $${i++}`;    values.push(filtros.insumo_id); }
     if (filtros.tipo)         { sql += ` AND sm.tipo = $${i++}`;         values.push(filtros.tipo); }
@@ -89,15 +89,14 @@ class InventarioService {
     return result.rows;
   }
 
-  // RNF-05: INSERT + UPDATE atómicos con transacción
   async createMovimiento(data) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
       const insumoResult = await client.query(
-        'SELECT stock_actual, stock_minimo FROM insumos WHERE id = $1',
-        [data.insumo_id]
+        'SELECT stock_actual, stock_minimo FROM insumos WHERE id = $1 AND local_id = $2',
+        [data.insumo_id, data.local_id]
       );
       const insumo = insumoResult.rows[0];
 

@@ -3,7 +3,7 @@ const productosService = require('./productos.service');
 const getProductos = async (req, res) => {
   try {
     const { categoria_id, limit, offset } = req.query;
-    const productos = await productosService.getAll({ categoria_id, limit, offset });
+    const productos = await productosService.getAll({ categoria_id, limit, offset, local_id: req.user.local_id });
     res.status(200).json(productos);
   } catch (error) {
     console.error('Error getting productos:', error);
@@ -14,7 +14,7 @@ const getProductos = async (req, res) => {
 const getProductoById = async (req, res) => {
   const { id } = req.params;
   try {
-    const producto = await productosService.getById(id);
+    const producto = await productosService.getById(id, req.user.local_id);
     if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json(producto);
   } catch (error) {
@@ -32,7 +32,7 @@ const createProducto = async (req, res) => {
     return res.status(400).json({ message: 'El costo de producción no puede ser mayor o igual al precio de venta', warning: true });
   }
   try {
-    const producto = await productosService.create({ nombre, precio_venta, costo_produccion, categoria_id, insumos });
+    const producto = await productosService.create({ nombre, precio_venta, costo_produccion, categoria_id, insumos, local_id: req.user.local_id });
     res.status(201).json(producto);
   } catch (error) {
     console.error('Error creating producto:', error);
@@ -47,7 +47,7 @@ const updateProducto = async (req, res) => {
     return res.status(400).json({ message: 'El costo de producción no puede ser mayor o igual al precio de venta', warning: true });
   }
   try {
-    const producto = await productosService.update(id, { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos });
+    const producto = await productosService.update(id, { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos }, req.user.local_id);
     if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json(producto);
   } catch (error) {
@@ -59,7 +59,7 @@ const updateProducto = async (req, res) => {
 const deleteProducto = async (req, res) => {
   const { id } = req.params;
   try {
-    const resultado = await productosService.delete(id);
+    const resultado = await productosService.delete(id, req.user.local_id);
     if (!resultado) return res.status(404).json({ message: 'Producto no encontrado' });
     res.status(200).json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
@@ -70,7 +70,7 @@ const deleteProducto = async (req, res) => {
 
 const getProductosConCostos = async (req, res) => {
   try {
-    const productos = await productosService.getAllWithCostos();
+    const productos = await productosService.getAllWithCostos(req.user.local_id);
     res.status(200).json(productos);
   } catch (error) {
     console.error('Error getting productos con costos:', error);

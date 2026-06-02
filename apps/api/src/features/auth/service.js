@@ -32,13 +32,20 @@ class AuthService {
     return { token, user };
   }
 
-  async register({ nombre, email, password, local_id = null }) {
+  async register({ nombre, email, password }) {
     const exists = await db.query('SELECT id FROM usuarios WHERE email = $1', [email]);
     if (exists.rows.length > 0) throw new Error('EMAIL_EXISTS');
 
     const rolResult = await db.query("SELECT id FROM roles WHERE nombre = 'jefe'");
     if (!rolResult.rows[0]) throw new Error('ROLE_NOT_FOUND');
     const rol_id = rolResult.rows[0].id;
+
+    // Crear un local propio para el nuevo usuario
+    const localResult = await db.query(
+      `INSERT INTO locales (nombre, activo, created_at, updated_at) VALUES ($1, true, NOW(), NOW()) RETURNING id`,
+      [`Local de ${nombre}`]
+    );
+    const local_id = localResult.rows[0].id;
 
     const password_hash = await bcrypt.hash(password, 10);
     const insert = await db.query(
@@ -47,8 +54,8 @@ class AuthService {
       [local_id, rol_id, nombre, email, password_hash]
     );
 
-    const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'jefe', local_id: insert.rows[0].local_id };
-    const token = signToken({ id: user.id, rol: user.rol, rol_id, email: user.email });
+    const user = { id: insert.rows[0].id, nombre: insert.rows[0].nombre, email: insert.rows[0].email, rol: 'jefe', local_id };
+    const token = signToken({ id: user.id, rol: user.rol, rol_id, local_id, email: user.email });
     return { token, user };
   }
 }
