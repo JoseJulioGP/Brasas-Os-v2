@@ -13,12 +13,19 @@ export const categorias = [
 export const categoriaPorId = Object.fromEntries(categorias.map((c) => [c.id, c]));
 
 export const getStockStatus = (item) => {
-  if (item.cantidad <= item.stockMinimo) return { color: "bg-red-500/10 text-red-400 border-red-500/20", bar: "bg-red-500", label: "Crítico", icon: FiAlertTriangle };
-  if (item.cantidad <= item.stockMinimo * 1.5) return { color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", bar: "bg-yellow-500", label: "Bajo", icon: FiAlertTriangle };
+  const actual  = parseFloat(item.stock_actual  ?? item.cantidad  ?? 0);
+  const minimo  = parseFloat(item.stock_minimo  ?? item.stockMinimo ?? 0);
+  if (actual <= minimo)       return { color: "bg-red-500/10 text-red-400 border-red-500/20",    bar: "bg-red-500",    label: "Crítico", icon: FiAlertTriangle };
+  if (actual <= minimo * 1.5) return { color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20", bar: "bg-yellow-500", label: "Bajo",    icon: FiAlertTriangle };
   return { color: "bg-green-500/10 text-green-400 border-green-500/20", bar: "bg-green-500", label: "OK", icon: FiCheckCircle };
 };
 
-export const getStockPercentage = (item) => Math.min((item.cantidad / (item.stockMinimo * 3)) * 100, 100);
+export const getStockPercentage = (item) => {
+  const actual = parseFloat(item.stock_actual ?? item.cantidad ?? 0);
+  const minimo = parseFloat(item.stock_minimo ?? item.stockMinimo ?? 0);
+  const max    = minimo > 0 ? minimo * 3 : 1;
+  return Math.min((actual / max) * 100, 100);
+};
 
 export const formatFecha = (fecha) => {
   const date = new Date(fecha);
