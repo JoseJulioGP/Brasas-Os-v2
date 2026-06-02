@@ -66,7 +66,7 @@ const updateUser = async (req, res) => {
 const deactivateUser = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await usersService.deactivateUser(id);
+    const result = await usersService.deactivateUser(id, req.user.local_id);
     res.status(200).json(result);
   } catch (error) {
     if (error.message === "USER_NOT_FOUND") {

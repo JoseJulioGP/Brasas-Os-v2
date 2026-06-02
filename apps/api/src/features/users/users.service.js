@@ -90,9 +90,9 @@ class UsersService {
         await db.query(query, values);
         return this.getUserById(id, local_id);
     }
-    async deactivateUser(id) {
-        const user = await this.getUserById(id);
-        await db.query("UPDATE usuarios SET activo = false WHERE id = $1", [id]);
+    async deactivateUser(id, local_id) {
+        const user = await this.getUserById(id, local_id);
+        await db.query("UPDATE usuarios SET activo = false WHERE id = $1 AND local_id = $2", [id, local_id]);
         return { message: "Usuario desactivado correctamente" };
     }
 
