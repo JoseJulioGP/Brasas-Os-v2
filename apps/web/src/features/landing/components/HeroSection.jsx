@@ -1,90 +1,165 @@
 import { useNavigate } from "react-router-dom";
-import { FiBarChart2 } from "react-icons/fi";
-import { FaArrowRight } from "react-icons/fa";
+import { FaArrowRight, FaFire, FaShoppingCart, FaUtensils, FaBox } from "react-icons/fa";
+import { FiTrendingUp, FiAlertCircle } from "react-icons/fi";
 
-const FloatingParticle = () => (
-  <div
-    className="absolute rounded-full bg-orange-500/20"
-    style={{
-      width: `${Math.random() * 6 + 2}px`,
-      height: `${Math.random() * 6 + 2}px`,
-      left: `${Math.random() * 100}%`,
-      top: `${Math.random() * 100}%`,
-      animation: `float ${Math.random() * 6 + 4}s ease-in-out infinite`,
-      animationDelay: `${Math.random() * 5}s`,
-    }}
-  />
+/* ── Mini dashboard mockup ── */
+const DashboardMockup = () => (
+  <div className="relative w-full max-w-[520px] mx-auto">
+    {/* Glow behind */}
+    <div className="absolute inset-0 bg-orange-600/10 blur-[60px] rounded-3xl" />
+
+    <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
+            <FaFire className="text-orange-400 text-[10px]" />
+          </div>
+          <span className="text-xs font-semibold text-white/60" style={{ fontFamily: "Georgia, serif" }}>Brasas OS</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-green-400/60" />
+          <span className="text-[10px] text-white/30">En vivo</span>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "Ingresos hoy",  value: "$284.500", up: true  },
+            { label: "Margen bruto",  value: "38.4%",    up: true  },
+            { label: "Stock crítico", value: "2 items",  up: false },
+          ].map(({ label, value, up }) => (
+            <div key={label} className="bg-white/[0.03] border border-white/[0.05] rounded-xl p-3">
+              <p className="text-[9px] text-white/30 mb-1">{label}</p>
+              <p className={`text-sm font-bold font-mono ${up ? "text-[#f5f0eb]" : "text-red-400"}`}>{value}</p>
+              <div className={`flex items-center gap-1 mt-1 text-[9px] ${up ? "text-emerald-400" : "text-red-400"}`}>
+                <FiTrendingUp className={up ? "" : "rotate-180"} />
+                <span>{up ? "+12% vs ayer" : "Reponer pronto"}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pedidos recientes */}
+        <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-3">
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Pedidos activos</span>
+            <span className="text-[9px] text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">3 en curso</span>
+          </div>
+          <div className="space-y-1.5">
+            {[
+              { id: "#A1B2", producto: "Hamburguesa + Papas", estado: "preparando", color: "text-amber-400 bg-amber-500/10" },
+              { id: "#C3D4", producto: "Bife de chorizo",     estado: "pendiente",  color: "text-blue-400 bg-blue-500/10"  },
+              { id: "#E5F6", producto: "Entraña + Chimich.",  estado: "entregado",  color: "text-green-400 bg-green-500/10"},
+            ].map(({ id, producto, estado, color }) => (
+              <div key={id} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FaShoppingCart className="text-[9px] text-white/20" />
+                  <span className="text-[10px] text-white/50 font-mono">{id}</span>
+                  <span className="text-[10px] text-white/40">{producto}</span>
+                </div>
+                <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${color}`}>{estado}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top productos */}
+        <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl p-3">
+          <span className="text-[10px] font-semibold text-white/40 uppercase tracking-wider">Top rentabilidad</span>
+          <div className="mt-2 space-y-1.5">
+            {[
+              { nombre: "Bife de Chorizo", margen: "52%", bar: 90 },
+              { nombre: "Hamburguesa Clásica", margen: "44%", bar: 75 },
+              { nombre: "Entraña con guarnición", margen: "38%", bar: 63 },
+            ].map(({ nombre, margen, bar }) => (
+              <div key={nombre}>
+                <div className="flex justify-between text-[10px] mb-0.5">
+                  <span className="text-white/40 flex items-center gap-1">
+                    <FaUtensils className="text-[8px] text-orange-400/50" /> {nombre}
+                  </span>
+                  <span className="text-emerald-400 font-mono font-bold">{margen}</span>
+                </div>
+                <div className="h-1 bg-white/[0.04] rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full" style={{ width: `${bar}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Alert */}
+        <div className="flex items-center gap-2 bg-red-500/8 border border-red-500/15 rounded-xl px-3 py-2">
+          <FiAlertCircle className="text-red-400 text-xs shrink-0" />
+          <p className="text-[10px] text-red-300/80">
+            <strong>Carne de res</strong> por debajo del stock mínimo — quedan 1.2 kg
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 );
 
+/* ── Hero ── */
 export const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-screen flex flex-col pt-20 overflow-hidden">
-      <div className="absolute inset-0 bg-noise pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-radial from-amber-900/15 via-transparent to-transparent animate-gradient-shift pointer-events-none" />
-      <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-orange-600/8 rounded-full blur-[200px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-amber-700/8 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute top-1/3 right-1/3 w-[2px] h-[200px] bg-gradient-to-b from-transparent via-orange-500/20 to-transparent" />
-      <div className="absolute bottom-1/3 left-1/3 w-[2px] h-[150px] bg-gradient-to-b from-transparent via-amber-500/15 to-transparent" />
-      {Array.from({ length: 25 }).map((_, i) => (
-        <FloatingParticle key={i} />
-      ))}
+    <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-12 overflow-hidden">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(234,88,12,0.12),transparent)]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-32 bg-gradient-to-b from-orange-500/30 to-transparent" />
 
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[400px] h-[300px] opacity-[0.04] pointer-events-none hidden lg:block">
-        <svg viewBox="0 0 400 300" fill="none">
-          <path d="M0 250 L40 200 L80 220 L120 150 L160 180 L200 100 L240 130 L280 80 L320 110 L360 40 L400 70" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
-          <path d="M0 270 L40 230 L80 240 L120 180 L160 200 L200 130 L240 150 L280 100 L320 120 L360 70 L400 90" stroke="#fb923c" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
-          <path d="M0 280 L40 260 L80 265 L120 220 L160 230 L200 180 L240 195 L280 150 L320 160 L360 120 L400 135" stroke="#fed7aa" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
-        </svg>
-      </div>
+      <div className="max-w-7xl mx-auto px-6 w-full">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
 
-      <div className="flex-1 flex items-center z-10">
-        <div className="max-w-7xl mx-auto px-6 w-full">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 text-orange-400 text-sm font-medium mb-8 font-body animate-fade-in-up">
-              <FiBarChart2 className="text-xs" />
-              Inteligencia financiera para tu restaurante
+          {/* ── Left: copy ── */}
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 text-orange-400/80 text-xs font-medium mb-8 animate-fade-in-up">
+              <FaFire className="text-[10px]" />
+              Sistema de gestión para restaurantes
             </div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold text-[#f5f0eb] leading-[1.05] mb-8 animate-fade-in-up stagger-1">
-              Convertí datos de tu restaurante en{" "}
-              <span className="bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500 bg-clip-text text-transparent">
-                ganancias reales
-              </span>
+            <h1 className="text-5xl md:text-6xl font-bold text-[#f5f0eb] leading-[1.05] mb-6 animate-fade-in-up stagger-1"
+              style={{ fontFamily: "Georgia, serif" }}>
+              Gestioná tu<br />
+              restaurante con<br />
+              <span className="text-orange-400">datos reales.</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/50 font-body max-w-3xl mx-auto mb-12 leading-relaxed animate-fade-in-up stagger-2">
-              Brasas OS analiza costos, márgenes e inventario para mostrarte exactamente
-              dónde invertir cada peso. No solo administrés —{" "}
-              <strong className="text-white/70">optimizá tu rentabilidad</strong>{" "}
-              por plato, por corte, por día.
+            <p className="text-base text-white/45 leading-relaxed mb-10 max-w-md animate-fade-in-up stagger-2">
+              Pedidos, inventario, menú y márgenes en un solo lugar.
+              Sabé exactamente qué plato rinde más y cuándo reponer stock —
+              en tiempo real.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up stagger-3">
-              <button
-                onClick={() => navigate("/register")}
-                className="group px-8 py-4 bg-orange-600 text-white rounded-2xl font-bold text-lg hover:bg-orange-500 transition-all shadow-xl shadow-orange-600/25 hover:shadow-orange-600/40 flex items-center gap-3"
-              >
-                Empezá a medir tu rentabilidad
-                <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+            {/* Feature pills */}
+            <div className="flex flex-wrap gap-2 mb-10 animate-fade-in-up stagger-2">
+              {["Control de pedidos", "Inventario inteligente", "Margen por plato", "Multi-rol"].map(f => (
+                <span key={f} className="text-xs text-white/40 bg-white/[0.04] border border-white/[0.07] px-3 py-1.5 rounded-full">
+                  {f}
+                </span>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 animate-fade-in-up stagger-3">
+              <button onClick={() => navigate("/register")}
+                className="group px-7 py-3.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-600/25 flex items-center justify-center gap-2">
+                Crear mi restaurante
+                <FaArrowRight className="text-sm group-hover:translate-x-0.5 transition-transform" />
               </button>
-              <button
-                onClick={() => navigate("/login")}
-                className="px-8 py-4 border border-white/[0.12] text-white/70 rounded-2xl font-medium text-lg hover:bg-white/[0.04] hover:text-white transition-all font-body"
-              >
+              <button onClick={() => navigate("/login")}
+                className="px-7 py-3.5 border border-white/[0.1] text-white/60 hover:text-white hover:border-white/20 rounded-xl font-medium transition-all">
                 Iniciar sesión
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="flex justify-center pb-8 animate-fade-in-up stagger-4">
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-xs text-white/30 font-body font-medium tracking-widest uppercase">Descubrí más</span>
-          <div className="w-5 h-8 rounded-full border border-white/20 flex items-start justify-center p-1.5">
-            <div className="w-1 h-2 rounded-full bg-orange-400 animate-bounce" />
+          {/* ── Right: mockup ── */}
+          <div className="animate-fade-in-up stagger-2 lg:stagger-1">
+            <DashboardMockup />
           </div>
         </div>
       </div>

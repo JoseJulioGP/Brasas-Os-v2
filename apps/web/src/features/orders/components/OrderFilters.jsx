@@ -14,7 +14,7 @@ export const OrderFilters = ({ search, onSearchChange, estado, onEstadoChange })
         <option value="">Todos los estados</option>
         <option value="pendiente">Pendiente</option>
         <option value="preparando">En Proceso</option>
-        <option value="entregado">Completado</option>
+        <option value="completado">Completado</option>
         <option value="cancelado">Cancelado</option>
       </select>
     </div>

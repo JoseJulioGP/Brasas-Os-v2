@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FiPackage, FiRefreshCw } from "react-icons/fi";
-import { FaBox, FaSearch, FaPlus, FaArrowDown, FaArrowUp } from "react-icons/fa";
+import { FaBox, FaSearch, FaPlus, FaArrowDown, FaArrowUp, FaTrash } from "react-icons/fa";
 import useInventoryStore from "../stores/useInventoryStore";
 import InventoryCard from "./InventoryCard";
 import InventoryModal from "./InventoryModal";
@@ -53,11 +53,14 @@ const MovimientosTable = ({ movimientos }) => {
 };
 
 export const InventoryPage = () => {
-  const { insumos, movimientos, isLoading, fetchInsumos, fetchMovimientos, addInsumo } = useInventoryStore();
+  const { insumos, movimientos, isLoading, fetchInsumos, fetchMovimientos, addInsumo, updateInsumo, deleteInsumo } = useInventoryStore();
 
-  const [tab, setTab]           = useState("insumos");
-  const [search, setSearch]     = useState("");
+  const [tab, setTab]             = useState("insumos");
+  const [search, setSearch]       = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing]     = useState(null);
+  const [deleteId, setDeleteId]   = useState(null);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => { fetchInsumos(); }, [fetchInsumos]);
 
@@ -69,16 +72,27 @@ export const InventoryPage = () => {
     i.nombre?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleAdd = async (newItem) => {
-    await addInsumo({
-      nombre:              newItem.nombre,
-      tipo:                newItem.tipo,
-      unidad_medida:       newItem.unidad_medida,
-      stock_actual:        newItem.stock_actual,
-      stock_minimo:        newItem.stock_minimo,
-      costo_unitario_prom: newItem.costo_unitario_prom,
-    });
+  const handleAdd = async (data) => { await addInsumo(data); };
+
+  const handleEdit = async (id, data) => { await updateInsumo(id, data); };
+
+  const openEdit = (item) => { setEditing(item); setShowModal(true); };
+
+  const openCreate = () => { setEditing(null); setShowModal(true); };
+
+  const handleCloseModal = () => { setShowModal(false); setEditing(null); };
+
+  const confirmDelete = async () => {
+    setDeleteError("");
+    try {
+      await deleteInsumo(deleteId);
+      setDeleteId(null);
+    } catch (err) {
+      setDeleteError(err?.response?.data?.message || "No se pudo eliminar el insumo");
+    }
   };
+
+  const closeDeleteModal = () => { setDeleteId(null); setDeleteError(""); };
 
   return (
     <div className="min-h-screen relative p-4 md:p-8">
@@ -98,7 +112,7 @@ export const InventoryPage = () => {
             </div>
           </div>
           {tab === "insumos" && (
-            <button onClick={() => setShowModal(true)}
+            <button onClick={openCreate}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
               <FaPlus /> Agregar Insumo
             </button>
@@ -138,7 +152,9 @@ export const InventoryPage = () => {
             </div>
           ) : (
             <div className="space-y-3 animate-fade-in-up opacity-0 stagger-3">
-              {filteredInsumos.map((item) => <InventoryCard key={item.id} item={item} />)}
+              {filteredInsumos.map((item) => (
+                <InventoryCard key={item.id} item={item} onEdit={openEdit} onDelete={setDeleteId} />
+              ))}
             </div>
           )
         ) : (
@@ -148,7 +164,40 @@ export const InventoryPage = () => {
         )}
       </div>
 
-      <InventoryModal isOpen={showModal} onClose={() => setShowModal(false)} onAdd={handleAdd} />
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeDeleteModal} />
+          <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-sm shadow-2xl shadow-black/60 p-6 space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <FaTrash className="text-red-400 text-sm" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#f5f0eb]" style={{ fontFamily: "Georgia, serif" }}>Eliminar insumo</h3>
+                <p className="text-sm text-white/40 mt-0.5">Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+            {deleteError && (
+              <div className="px-4 py-2.5 rounded-xl bg-red-500/8 border border-red-500/20 text-xs text-red-400">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button onClick={closeDeleteModal}
+                className="flex-1 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/70 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all">
+                Cancelar
+              </button>
+              <button onClick={confirmDelete} disabled={isLoading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-500 disabled:opacity-50 transition-all shadow-lg shadow-red-900/30 flex items-center justify-center gap-2">
+                {isLoading && <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                {isLoading ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <InventoryModal isOpen={showModal} onClose={handleCloseModal} onAdd={handleAdd} onEdit={handleEdit} editing={editing} />
     </div>
   );
 };

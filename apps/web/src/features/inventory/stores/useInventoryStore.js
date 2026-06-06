@@ -45,6 +45,17 @@ const useInventoryStore = create((set, get) => ({
     }
   },
 
+  deleteInsumo: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await inventoryService.deleteInsumo(id);
+      set((state) => ({ insumos: state.insumos.filter((i) => i.id !== id), isLoading: false }));
+    } catch (error) {
+      set({ error: error.response?.data?.message || error.message, isLoading: false });
+      throw error;
+    }
+  },
+
   // === MOVIMIENTOS ===
   fetchMovimientos: async (filtros = {}) => {
     set({ isLoading: true, error: null });

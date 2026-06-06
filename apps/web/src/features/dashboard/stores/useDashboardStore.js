@@ -1,106 +1,92 @@
 import { create } from "zustand";
-import { 
-  fetchDashboardData, 
-  fetchStats, 
-  fetchFinancialSummary, 
-  fetchInventory, 
+import {
+  fetchFinancialSummary,
+  fetchStats,
+  fetchInventory,
   fetchActionHistory,
-  fetchTopProducts 
+  fetchTopProducts,
 } from "../services/dashboardService";
 
 const useDashboardStore = create((set, get) => ({
-  // Estado
-  periodo: "dia",
-  stats: null,
-  financial: null,
-  inventory: [],
+  periodo:       "dia",
+  stats:         null,
+  financial:     null,
+  inventory:     [],
   actionHistory: [],
-  topProducts: [],
-  isLoading: false,
+  topProducts:   [],
+
+  // Loading granular por sección
+  loading: {
+    financial:  true,
+    stats:      true,
+    inventory:  true,
+    history:    true,
+    products:   true,
+  },
   error: null,
 
-  // Cambiar periodo
-  setPeriodo: (periodo) => {
-    set({ periodo });
-    get().fetchAll();
+  // Compatibilidad
+  get isLoading() {
+    const l = get().loading;
+    return Object.values(l).some(Boolean);
   },
 
-  // Obtener todos los datos del dashboard
-  fetchAll: async () => {
+  setPeriodo: (periodo) => set({ periodo }),
+
+  fetchData: async () => {
     const { periodo } = get();
-    set({ isLoading: true, error: null });
-    
-    try {
-      // Ejecutar todas las llamadas en paralelo
-      const [dashboardData, stats, financial, inventory, actionHistory, topProducts] = await Promise.allSettled([
-        fetchDashboardData(periodo),
-        fetchStats(periodo),
-        fetchFinancialSummary(periodo),
-        fetchInventory(),
-        fetchActionHistory(),
-        fetchTopProducts()
-      ]);
 
-      // Procesar resultados
-      const statsValue = stats.status === 'fulfilled' ? stats.value : null;
-      const financialValue = financial.status === 'fulfilled' ? financial.value : null;
-      const inventoryValue = inventory.status === 'fulfilled' ? inventory.value : [];
-      const historyValue = actionHistory.status === 'fulfilled' ? actionHistory.value : [];
-      const productsValue = topProducts.status === 'fulfilled' ? topProducts.value : [];
-      
-      // Usar datos del dashboard como base
-      const dashboardValue = dashboardData.status === 'fulfilled' ? dashboardData.value : {};
+    // Reset loading
+    set({
+      loading: { financial: true, stats: true, inventory: true, history: true, products: true },
+      error: null,
+    });
 
-      set({
-        stats: statsValue || dashboardValue || {},
-        financial: financialValue || {},
-        inventory: inventoryValue,
-        actionHistory: historyValue,
-        topProducts: productsValue,
-        isLoading: false,
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard:', error);
-      set({ error: error.message, isLoading: false });
-    }
+    // Lanzar todo en paralelo pero actualizar el store apenas llega cada uno
+    const run = async (key, fn) => {
+      try {
+        const value = await fn();
+        set((s) => ({ ...s, loading: { ...s.loading, [key]: false }, [key]: value ?? s[key] }));
+      } catch {
+        set((s) => ({ ...s, loading: { ...s.loading, [key]: false } }));
+      }
+    };
+
+    // Inventario se comparte entre stats e inventory — se llama una sola vez
+    const inventoryPromise = fetchInventory();
+
+    await Promise.allSettled([
+      // Financiero
+      run("financial", () => fetchFinancialSummary(periodo)),
+
+      // Stats: depende del inventario ya pedido
+      (async () => {
+        try {
+          const [statsData, invData] = await Promise.allSettled([
+            fetchStats(periodo),
+            inventoryPromise,
+          ]);
+          const s = statsData.status === "fulfilled" ? statsData.value : null;
+          const i = invData.status  === "fulfilled" ? invData.value  : [];
+          set((prev) => ({
+            stats:    s ?? prev.stats,
+            inventory: i,
+            loading:  { ...prev.loading, stats: false, inventory: false },
+          }));
+        } catch {
+          set((s) => ({ ...s, loading: { ...s.loading, stats: false, inventory: false } }));
+        }
+      })(),
+
+      // Historial
+      run("actionHistory", fetchActionHistory),
+
+      // Top productos
+      run("topProducts", fetchTopProducts),
+    ]);
   },
 
-  // Obtener solo stats (alias para compatibilidad)
-  fetchStats: async () => {
-    const { periodo } = get();
-    try {
-      const stats = await fetchStats(periodo);
-      set({ stats });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  },
-
-  // Obtener solo inventario
-  fetchInventory: async () => {
-    try {
-      const inventory = await fetchInventory();
-      set({ inventory });
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-    }
-  },
-
-  // Obtener solo historial
-  fetchHistory: async () => {
-    try {
-      const actionHistory = await fetchActionHistory();
-      set({ actionHistory });
-    } catch (error) {
-      console.error('Error fetching history:', error);
-    }
-  },
-
-  // Limpiar error
   clearError: () => set({ error: null }),
-
-  // Alias para compatibilidad con DashboardPage
-  fetchData: async () => get().fetchAll()
 }));
 
 export default useDashboardStore;

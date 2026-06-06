@@ -94,7 +94,7 @@ export const useOrdersStore = create((set, get) => ({
     try {
       await ordersService.cancelOrder(id);
       set((state) => ({
-        orders: state.orders.map((o) => o.id === id ? { ...o, estado: "cancelado" } : o),
+        orders: state.orders.map((o) => o.id === id ? { ...o, estado: "cancelado" } : o), // cancelado sigue igual
         isLoading: false,
       }));
     } catch (error) {

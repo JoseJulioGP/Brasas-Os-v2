@@ -1,7 +1,8 @@
 import { FiClock, FiDollarSign } from "react-icons/fi";
+import { FaEdit, FaTrash } from "react-icons/fa";
 import { getStockStatus, getStockPercentage, formatFecha, categoriaPorId } from "../utils/inventoryUtils";
 
-const InventoryCard = ({ item }) => {
+const InventoryCard = ({ item, onEdit, onDelete }) => {
   const status     = getStockStatus(item);
   const percentage = getStockPercentage(item);
   const Icon       = status.icon;
@@ -78,6 +79,21 @@ const InventoryCard = ({ item }) => {
             <Icon className="text-xs" />
             {status.label}
           </span>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {onEdit && (
+              <button onClick={() => onEdit(item)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-orange-400 hover:bg-orange-500/10 transition-all">
+                <FaEdit className="text-xs" />
+              </button>
+            )}
+            {onDelete && (
+              <button onClick={() => onDelete(item.id)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                <FaTrash className="text-xs" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

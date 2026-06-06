@@ -41,21 +41,21 @@ export const fetchFinancialSummary = async (periodo) => {
   }
 };
 
-// Stats del período: pedidos contados + stock carnes
+// Stats del período: pedidos contados + stock insumos
 export const fetchStats = async (periodo) => {
   try {
     const fechaInicio = getFechaInicio(periodo);
-    const [pedidosRes, carnesRes] = await Promise.allSettled([
+    const [pedidosRes, insumosRes] = await Promise.allSettled([
       api.get("/pedidos/todos", { params: { fecha_inicio: fechaInicio.toISOString() } }),
-      api.get("/inventario/carnes"),
+      api.get("/inventario/insumos"),
     ]);
     const pedidos = pedidosRes.status === "fulfilled" ? (pedidosRes.value.data || []) : [];
-    const carnes  = carnesRes.status  === "fulfilled" ? (carnesRes.value.data  || []) : [];
+    const insumos = insumosRes.status === "fulfilled" ? (insumosRes.value.data || []) : [];
     const completados = pedidos.filter((p) => p.estado === "entregado");
     const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
-    const stockTotal = carnes.reduce((s, c) => s + (parseFloat(c.kg_disponibles) || 0), 0);
+    const stockTotal = insumos.reduce((s, i) => s + (parseFloat(i.stock_actual) || 0), 0);
     return {
-      pedidos: pedidos.length,
+      pedidos: pedidos.filter((p) => p.estado !== "cancelado").length,
       ingresos,
       clientesAtendidos: completados.length,
       stockTotal: Math.round(stockTotal * 10) / 10,
@@ -65,10 +65,10 @@ export const fetchStats = async (periodo) => {
   }
 };
 
-// Inventario de carnes disponibles
+// Inventario de insumos disponibles
 export const fetchInventory = async () => {
   try {
-    const { data } = await api.get("/inventario/carnes");
+    const { data } = await api.get("/inventario/insumos");
     return data || [];
   } catch {
     return [];

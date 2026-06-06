@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaTimes, FaUtensils } from "react-icons/fa";
+import { FaPlus, FaTimes, FaUtensils, FaTrash } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
 import { menuService } from "../services/menuService";
 import useInventoryStore from "../../inventory/stores/useInventoryStore";
@@ -17,6 +17,7 @@ export const MenuPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing]     = useState(null);
   const [categorias, setCategorias] = useState([]);
+  const [deleteId, setDeleteId]     = useState(null);
 
   useEffect(() => {
     clearError();
@@ -50,9 +51,9 @@ export const MenuPage = () => {
     } catch { /* error queda en store */ }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("¿Eliminar este producto del menú?")) remove(id);
-  };
+  const handleDelete = (id) => setDeleteId(id);
+
+  const confirmDelete = () => { remove(deleteId); setDeleteId(null); };
 
   return (
     <div className="min-h-screen relative p-4 md:p-8">
@@ -108,6 +109,33 @@ export const MenuPage = () => {
           </>
         )}
       </div>
+
+      {deleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
+          <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-sm shadow-2xl shadow-black/60 p-6 space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                <FaTrash className="text-red-400 text-sm" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[#f5f0eb]" style={{ fontFamily: "Georgia, serif" }}>Eliminar plato</h3>
+                <p className="text-sm text-white/40 mt-0.5">Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteId(null)}
+                className="flex-1 py-2.5 rounded-xl text-sm text-white/40 hover:text-white/70 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all">
+                Cancelar
+              </button>
+              <button onClick={confirmDelete}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-500 transition-all shadow-lg shadow-red-900/30">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <MenuFormModal isOpen={showModal} editing={editing} isLoading={isLoading}
         allInsumos={allInsumos} categorias={categorias} onSubmit={handleSubmit} onClose={() => setShowModal(false)} />

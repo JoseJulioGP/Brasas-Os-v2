@@ -18,6 +18,10 @@ export const inventoryService = {
     return data;
   },
 
+  async deleteInsumo(id) {
+    await api.delete(`/inventario/insumos/${id}`);
+  },
+
   // === MOVIMIENTOS ===
   async getMovimientos(filtros = {}) {
     const { data } = await api.get("/inventario/movimientos", { params: filtros });
