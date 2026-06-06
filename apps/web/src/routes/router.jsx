@@ -7,6 +7,7 @@ import DashboardPage from "../features/dashboard/components/DashboardPage";
 import { InventoryPage } from "../features/inventory/components/InventoryPage";
 import { MenuPage } from "../features/menu/components/MenuPage";
 import { UsersPage } from "../features/users/components/UsersPage";
+import { MisEmpleadosPage } from "../features/users/components/MisEmpleadosPage";
 import { OrdersPage } from "../features/orders/components/OrdersPage";
 import { HistoryPage } from "../features/history/components/HistoryPage";
 import { AnalyticsPage } from "../features/analytics/components/AnalyticsPage";
@@ -115,6 +116,15 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute allowedRoles={["ADMIN", "JEFE"]}>
         <OrdersPage />
+      </ProtectedRoute>
+    ),
+  },
+  // Jefe
+  {
+    path: "/jefe/equipo",
+    element: (
+      <ProtectedRoute allowedRoles={["JEFE", "ADMIN"]}>
+        <MisEmpleadosPage />
       </ProtectedRoute>
     ),
   },

@@ -40,4 +40,9 @@ export const usersService = {
     const response = await api.post("/usuarios/codigo-invitacion");
     return response.data;
   },
+
+  async getMisEmpleados() {
+    const response = await api.get("/usuarios/mis-empleados");
+    return response.data;
+  },
 };
