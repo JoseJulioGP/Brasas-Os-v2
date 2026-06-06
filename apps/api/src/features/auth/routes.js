@@ -34,7 +34,16 @@ const { verifyToken } = require('../../shared/middlewares/auth.middleware');
  *               password:
  *                 type: string
  *                 example: "123456"
- *                 description: Se guarda cifrada con bcrypt (nunca en texto plano)
+ *                 description: Mínimo 6 caracteres — se cifra con bcrypt antes de guardarse
+ *               tipo_registro:
+ *                 type: string
+ *                 enum: [jefe, empleado]
+ *                 example: jefe
+ *                 description: "jefe: crea su propio local | empleado: requiere código de invitación"
+ *               codigo_invitacion:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: Solo requerido si tipo_registro es empleado
  *     responses:
  *       201:
  *         description: Usuario creado — la contraseña en DB está cifrada con bcrypt
