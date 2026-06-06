@@ -146,8 +146,10 @@ const { verifyToken, requireAnyRole } = require('../../shared/middlewares/auth.m
  */
 
 // Rutas específicas ANTES de /:id
-router.get('/costos',     verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.getProductosConCostos);
-router.get('/categorias', verifyToken, productosController.getCategorias);
+router.get('/costos',          verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.getProductosConCostos);
+router.get('/categorias',      verifyToken, productosController.getCategorias);
+router.post('/categorias',     verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.createCategoria);
+router.delete('/categorias/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.deleteCategoria);
 
 // Catálogo
 router.get('/',     verifyToken, productosController.getProductos);

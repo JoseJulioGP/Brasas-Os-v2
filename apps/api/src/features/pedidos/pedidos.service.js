@@ -46,12 +46,14 @@ class PedidosService {
     finally { client.release(); }
   }
 
-  async getPedidoById(id) {
+  async getPedidoById(id, local_id = null) {
+    const whereLocal = local_id ? ' AND p.local_id = $2' : '';
+    const params = local_id ? [id, local_id] : [id];
     const r = await db.query(
       `SELECT p.*, u.nombre AS empleado_nombre
        FROM pedidos p LEFT JOIN usuarios u ON p.empleado_id = u.id
-       WHERE p.id = $1`,
-      [id]
+       WHERE p.id = $1${whereLocal}`,
+      params
     );
     if (!r.rows[0]) return null;
     const pedido = r.rows[0];
@@ -100,10 +102,11 @@ class PedidosService {
     return (await db.query(sql, values)).rows;
   }
 
-  async updateEstado(id, estado) {
+  async updateEstado(id, estado, local_id) {
     return (await db.query(
-      `UPDATE pedidos SET estado = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-      [estado, id]
+      `UPDATE pedidos SET estado = $1, updated_at = NOW()
+       WHERE id = $2 AND local_id = $3 RETURNING *`,
+      [estado, id, local_id]
     )).rows[0];
   }
 
@@ -141,8 +144,9 @@ class PedidosService {
 
   async cancelPedido(id, usuario_id, local_id) {
     const r = await db.query(
-      `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW() WHERE id = $1 RETURNING id`,
-      [id]
+      `UPDATE pedidos SET estado = 'cancelado', updated_at = NOW()
+       WHERE id = $1 AND local_id = $2 RETURNING id`,
+      [id, local_id]
     );
     if (r.rows[0]) {
       historialService.registrar({
@@ -163,8 +167,8 @@ class PedidosService {
 
       const pedidoResult = await client.query(
         `UPDATE pedidos SET estado = 'completado', completado_at = NOW(), updated_at = NOW()
-         WHERE id = $1 AND estado != 'completado' RETURNING *`,
-        [pedidoId]
+         WHERE id = $1 AND local_id = $2 AND estado != 'completado' RETURNING *`,
+        [pedidoId, local_id]
       );
       if (!pedidoResult.rows[0]) throw new Error('PEDIDO_YA_COMPLETADO');
 
@@ -179,8 +183,20 @@ class PedidosService {
           [item.producto_id]
         );
 
-        for (const pi of insumosResult.rows) {
-          const cant = parseFloat(pi.cantidad_requerida) * item.cantidad;
+        // Agrupar por insumo_id para evitar doble descuento si hay duplicados en producto_insumos
+        const insumosAgrupados = Object.values(
+          insumosResult.rows.reduce((acc, pi) => {
+            if (acc[pi.insumo_id]) {
+              acc[pi.insumo_id].cantidad_requerida += parseFloat(pi.cantidad_requerida);
+            } else {
+              acc[pi.insumo_id] = { insumo_id: pi.insumo_id, cantidad_requerida: parseFloat(pi.cantidad_requerida) };
+            }
+            return acc;
+          }, {})
+        );
+
+        for (const pi of insumosAgrupados) {
+          const cant = pi.cantidad_requerida * item.cantidad;
 
           const stock = await client.query(
             `SELECT stock_actual, nombre FROM insumos

@@ -8,7 +8,7 @@ const getResumen = async (req, res) => {
   const periodoFinal = periodosValidos.includes(periodo) ? periodo : 'mensual';
 
   try {
-    const resumen = await reportesService.getResumen(periodoFinal);
+    const resumen = await reportesService.getResumen(periodoFinal, req.user.local_id);
     res.status(200).json(resumen);
   } catch (error) {
     console.error('Error getting resumen:', error);
@@ -23,7 +23,7 @@ const getTurno = async (req, res) => {
   const empleado_id = rol === 'EMPLEADO' ? req.user.id : (req.query.empleado_id || req.user.id);
 
   try {
-    const turno = await reportesService.getTurnoEmpleado(empleado_id);
+    const turno = await reportesService.getTurnoEmpleado(empleado_id, req.user.local_id);
     res.status(200).json(turno);
   } catch (error) {
     console.error('Error getting turno:', error);

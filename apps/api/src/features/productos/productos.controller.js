@@ -88,4 +88,31 @@ const getCategorias = async (req, res) => {
   }
 };
 
-module.exports = { getProductos, getProductoById, createProducto, updateProducto, deleteProducto, getProductosConCostos, getCategorias };
+const createCategoria = async (req, res) => {
+  const { nombre } = req.body;
+  if (!nombre?.trim()) return res.status(400).json({ message: 'El nombre es requerido' });
+  try {
+    const categoria = await productosService.createCategoria(nombre.trim());
+    res.status(201).json(categoria);
+  } catch (error) {
+    if (error.message === 'CATEGORIA_DUPLICADA') {
+      return res.status(409).json({ message: 'Ya existe una categoría con ese nombre' });
+    }
+    console.error('Error creating categoria:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+const deleteCategoria = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await productosService.deleteCategoria(id);
+    if (!result) return res.status(404).json({ message: 'Categoría no encontrada' });
+    res.status(200).json({ message: 'Categoría eliminada correctamente' });
+  } catch (error) {
+    console.error('Error deleting categoria:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getProductos, getProductoById, createProducto, updateProducto, deleteProducto, getProductosConCostos, getCategorias, createCategoria, deleteCategoria };

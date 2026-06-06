@@ -26,12 +26,12 @@ function getRangos(periodo) {
   return { inicio, fin, inicioAnterior, finAnterior };
 }
 
-async function calcularMetricas(inicio, fin) {
+async function calcularMetricas(inicio, fin, local_id) {
   const ingresosResult = await db.query(
     `SELECT COALESCE(SUM(total), 0) AS ingresos
      FROM pedidos
-     WHERE estado = 'entregado' AND created_at BETWEEN $1 AND $2`,
-    [inicio, fin]
+     WHERE estado::text = 'completado' AND local_id = $3 AND created_at BETWEEN $1 AND $2`,
+    [inicio, fin, local_id]
   );
 
   const costoProduccionResult = await db.query(
@@ -39,19 +39,22 @@ async function calcularMetricas(inicio, fin) {
      FROM pedido_items pi
      JOIN productos p   ON pi.producto_id = p.id
      JOIN pedidos ped   ON pi.pedido_id   = ped.id
-     WHERE ped.estado = 'entregado'
+     WHERE ped.estado::text = 'completado'
+       AND ped.local_id = $3
        AND ped.created_at BETWEEN $1 AND $2
        AND p.costo_produccion IS NOT NULL`,
-    [inicio, fin]
+    [inicio, fin, local_id]
   );
 
   const costoInventarioResult = await db.query(
-    `SELECT COALESCE(SUM(cantidad * costo_unitario), 0) AS costo_inventario
-     FROM stock_movimientos
-     WHERE tipo = 'entrada'
-       AND created_at BETWEEN $1 AND $2
-       AND costo_unitario IS NOT NULL`,
-    [inicio, fin]
+    `SELECT COALESCE(SUM(sm.cantidad * sm.costo_unitario), 0) AS costo_inventario
+     FROM stock_movimientos sm
+     JOIN insumos i ON sm.insumo_id = i.id
+     WHERE sm.tipo = 'entrada'
+       AND i.local_id = $3
+       AND sm.created_at BETWEEN $1 AND $2
+       AND sm.costo_unitario IS NOT NULL`,
+    [inicio, fin, local_id]
   );
 
   const ingresos        = parseFloat(ingresosResult.rows[0].ingresos);
@@ -65,12 +68,12 @@ async function calcularMetricas(inicio, fin) {
 }
 
 class ReportesService {
-  async getResumen(periodo = 'mensual') {
+  async getResumen(periodo = 'mensual', local_id) {
     const { inicio, fin, inicioAnterior, finAnterior } = getRangos(periodo);
 
     const [actual, anterior] = await Promise.all([
-      calcularMetricas(inicio, fin),
-      calcularMetricas(inicioAnterior, finAnterior)
+      calcularMetricas(inicio, fin, local_id),
+      calcularMetricas(inicioAnterior, finAnterior, local_id)
     ]);
 
     let variacion_utilidad = null;
@@ -91,18 +94,18 @@ class ReportesService {
     };
   }
 
-  async getTurnoEmpleado(empleado_id) {
+  async getTurnoEmpleado(empleado_id, local_id) {
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
 
     const pedidosResult = await db.query(
       `SELECT
-         COUNT(*)                                               AS total_pedidos,
-         COUNT(CASE WHEN estado = 'entregado'   THEN 1 END)   AS completados,
-         COUNT(CASE WHEN estado = 'preparando'  THEN 1 END)   AS en_proceso,
-         COUNT(CASE WHEN estado = 'pendiente'   THEN 1 END)   AS pendientes
+         COUNT(*)                                                        AS total_pedidos,
+         COUNT(CASE WHEN estado::text = 'completado'  THEN 1 END)      AS completados,
+         COUNT(CASE WHEN estado::text = 'preparando'  THEN 1 END)      AS en_proceso,
+         COUNT(CASE WHEN estado::text = 'pendiente'   THEN 1 END)      AS pendientes
        FROM pedidos
-       WHERE empleado_id = $1 AND created_at >= $2`,
-      [empleado_id, hoy]
+       WHERE empleado_id = $1 AND local_id = $2 AND created_at >= $3`,
+      [empleado_id, local_id, hoy]
     );
 
     const topProductosResult = await db.query(
@@ -110,11 +113,11 @@ class ReportesService {
        FROM pedido_items pi
        JOIN productos p ON pi.producto_id = p.id
        JOIN pedidos ped ON pi.pedido_id = ped.id
-       WHERE ped.estado = 'entregado' AND ped.created_at >= $1
+       WHERE ped.estado::text = 'completado' AND ped.local_id = $2 AND ped.created_at >= $1
        GROUP BY p.id, p.nombre
        ORDER BY total_vendido DESC
        LIMIT 3`,
-      [hoy]
+      [hoy, local_id]
     );
 
     const conteo = pedidosResult.rows[0];

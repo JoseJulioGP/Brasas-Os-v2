@@ -23,6 +23,7 @@ const getHistorial = async (req, res) => {
     const result = await historialService.getHistorial(
       req.user.rol,
       req.user.id,
+      req.user.local_id,
       { usuario_id, rol, tipo_accion, entidad, fecha_inicio, fecha_fin, page, limit },
     );
     res.status(200).json(result);

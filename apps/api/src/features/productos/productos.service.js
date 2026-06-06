@@ -1,5 +1,19 @@
 const db = require('../../shared/database/db');
 
+// Agrupa insumos duplicados sumando sus cantidades
+function deduplicarInsumos(insumos) {
+  const map = {};
+  for (const ins of insumos) {
+    if (!ins.insumo_id) continue;
+    if (map[ins.insumo_id]) {
+      map[ins.insumo_id].cantidad_requerida += parseFloat(ins.cantidad_requerida) || 0;
+    } else {
+      map[ins.insumo_id] = { insumo_id: ins.insumo_id, cantidad_requerida: parseFloat(ins.cantidad_requerida) || 0 };
+    }
+  }
+  return Object.values(map);
+}
+
 class ProductosService {
 
   async getAll(filtros = {}) {
@@ -40,7 +54,8 @@ class ProductosService {
       );
       const producto = result.rows[0];
       if (Array.isArray(data.insumos) && data.insumos.length > 0) {
-        for (const ins of data.insumos) {
+        const dedup = deduplicarInsumos(data.insumos);
+        for (const ins of dedup) {
           await client.query(`INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`, [producto.id, ins.insumo_id, ins.cantidad_requerida]);
         }
       }
@@ -63,7 +78,8 @@ class ProductosService {
       if (campos.length > 0) { campos.push(`updated_at = NOW()`); valores.push(id, local_id); await client.query(`UPDATE productos SET ${campos.join(', ')} WHERE id = $${i} AND local_id IS NOT DISTINCT FROM $${i + 1}`, valores); }
       await client.query('DELETE FROM producto_insumos WHERE producto_id = $1', [id]);
       if (Array.isArray(data.insumos) && data.insumos.length > 0) {
-        for (const ins of data.insumos) await client.query(`INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`, [id, ins.insumo_id, ins.cantidad_requerida]);
+        const dedup = deduplicarInsumos(data.insumos);
+        for (const ins of dedup) await client.query(`INSERT INTO producto_insumos (producto_id, insumo_id, cantidad_requerida) VALUES ($1, $2, $3)`, [id, ins.insumo_id, ins.cantidad_requerida]);
       }
       await client.query('COMMIT');
       return this.getById(id, local_id);
@@ -77,6 +93,24 @@ class ProductosService {
 
   async getCategorias() {
     return (await db.query(`SELECT id, nombre FROM categorias WHERE activo = true AND ambito = 'producto' ORDER BY nombre`)).rows;
+  }
+
+  async createCategoria(nombre) {
+    const existe = await db.query(`SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1) AND activo = true`, [nombre]);
+    if (existe.rows[0]) throw new Error('CATEGORIA_DUPLICADA');
+    const result = await db.query(
+      `INSERT INTO categorias (nombre, ambito, activo) VALUES ($1, 'producto', true) RETURNING id, nombre`,
+      [nombre]
+    );
+    return result.rows[0];
+  }
+
+  async deleteCategoria(id) {
+    const result = await db.query(
+      `UPDATE categorias SET activo = false WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    return result.rows[0] || null;
   }
 
   async _getInsumosByProductoId(productoId) {

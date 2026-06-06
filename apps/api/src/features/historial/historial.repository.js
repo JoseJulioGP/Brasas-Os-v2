@@ -17,12 +17,13 @@ class HistorialRepository {
     return result.rows[0];
   }
 
-  async findAll({ usuario_id, accion, entidad, fecha_inicio, fecha_fin, page = 1, limit = 20, entidades_whitelist } = {}) {
+  async findAll({ usuario_id, local_id, accion, entidad, fecha_inicio, fecha_fin, page = 1, limit = 20, entidades_whitelist } = {}) {
     const values = [];
     let idx = 1;
     const conditions = [];
 
-    if (usuario_id)  { conditions.push(`h.usuario_id = $${idx++}`); values.push(usuario_id); }
+    if (local_id)    { conditions.push(`h.local_id = $${idx++}`);    values.push(local_id); }
+    if (usuario_id)  { conditions.push(`h.usuario_id = $${idx++}`);  values.push(usuario_id); }
     if (accion)      { conditions.push(`h.accion = $${idx++}`);      values.push(accion); }
     if (entidad)     { conditions.push(`h.entidad = $${idx++}`);     values.push(entidad); }
     if (fecha_inicio){ conditions.push(`h.created_at >= $${idx++}`); values.push(fecha_inicio); }

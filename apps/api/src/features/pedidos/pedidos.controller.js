@@ -51,7 +51,7 @@ const getPedidoById = async (req, res) => {
   const rol = req.user.rol;
 
   try {
-    const pedido = await pedidosService.getPedidoById(id);
+    const pedido = await pedidosService.getPedidoById(id, req.user.local_id);
     if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
 
     if (rol === 'EMPLEADO' && pedido.empleado_id !== empleado_id) {
@@ -80,7 +80,7 @@ const updateEstado = async (req, res) => {
   // El pedido se completa directamente al registrar el pago
 
   try {
-    const pedido = await pedidosService.getPedidoById(id);
+    const pedido = await pedidosService.getPedidoById(id, req.user.local_id);
     if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
 
     if (rol === 'EMPLEADO' && pedido.empleado_id !== empleado_id) {
@@ -106,7 +106,7 @@ const updateEstado = async (req, res) => {
     if (estado === 'completado') {
       pedidoActualizado = await pedidosService.completarPedido(id, req.user.id, req.user.local_id);
     } else {
-      pedidoActualizado = await pedidosService.updateEstado(id, estado);
+      pedidoActualizado = await pedidosService.updateEstado(id, estado, req.user.local_id);
     }
 
     res.status(200).json(pedidoActualizado);
@@ -164,7 +164,7 @@ const cancelPedido = async (req, res) => {
   const empleado_id = req.user.id;
 
   try {
-    const pedido = await pedidosService.getPedidoById(id);
+    const pedido = await pedidosService.getPedidoById(id, req.user.local_id);
     if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
 
     if (rol === 'EMPLEADO' && pedido.empleado_id !== empleado_id) {

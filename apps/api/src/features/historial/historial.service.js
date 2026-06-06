@@ -4,19 +4,19 @@ const { TIPOS_ACCION, ENTIDADES, ENTIDADES_NEGOCIO } = require('../../shared/con
 const VALID_TIPOS     = Object.values(TIPOS_ACCION);
 const VALID_ENTIDADES = Object.values(ENTIDADES);
 
-function buildScope(rol, filtros) {
+function buildScope(rol, localId, filtros) {
   if (rol === 'ADMIN') return { ...filtros };
   if (rol === 'JEFE') {
     const entidadPermitida = filtros.entidad && ENTIDADES_NEGOCIO.includes(filtros.entidad) ? filtros.entidad : null;
-    return { accion: filtros.accion, fecha_inicio: filtros.fecha_inicio, fecha_fin: filtros.fecha_fin, page: filtros.page, limit: filtros.limit, entidades_whitelist: entidadPermitida ? [entidadPermitida] : ENTIDADES_NEGOCIO };
+    return { local_id: localId, accion: filtros.accion, fecha_inicio: filtros.fecha_inicio, fecha_fin: filtros.fecha_fin, page: filtros.page, limit: filtros.limit, entidades_whitelist: entidadPermitida ? [entidadPermitida] : ENTIDADES_NEGOCIO };
   }
-  return { usuario_id: filtros._usuario_id_forzado, accion: filtros.accion, fecha_inicio: filtros.fecha_inicio, fecha_fin: filtros.fecha_fin, page: filtros.page, limit: filtros.limit };
+  return { local_id: localId, usuario_id: filtros._usuario_id_forzado, accion: filtros.accion, fecha_inicio: filtros.fecha_inicio, fecha_fin: filtros.fecha_fin, page: filtros.page, limit: filtros.limit };
 }
 
 class HistorialService {
-  async getHistorial(rol, userId, filtros = {}) {
+  async getHistorial(rol, userId, localId, filtros = {}) {
     if (rol === 'EMPLEADO') filtros._usuario_id_forzado = userId;
-    const scope = buildScope(rol, filtros);
+    const scope = buildScope(rol, localId, filtros);
     const { data, total } = await historialRepository.findAll(scope);
     return { data, total, page: parseInt(filtros.page) || 1, limit: parseInt(filtros.limit) || 20 };
   }

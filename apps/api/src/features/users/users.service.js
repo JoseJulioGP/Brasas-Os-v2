@@ -37,14 +37,12 @@ class UsersService {
         return result.rows;
     }
     async getUserById(id, local_id) {
-        const conditions = local_id ? 'WHERE u.id = $1 AND u.local_id = $2' : 'WHERE u.id = $1';
-        const params = local_id ? [id, local_id] : [id];
         const result = await db.query(
             `SELECT u.id, u.nombre, u.email, u.activo, u.created_at, r.nombre as rol_nombre
             FROM usuarios u
             JOIN roles r ON u.rol_id = r.id
-            ${conditions}`,
-            params,
+            WHERE u.id = $1 AND u.local_id = $2`,
+            [id, local_id],
         );
 
         if (result.rows.length === 0) {
