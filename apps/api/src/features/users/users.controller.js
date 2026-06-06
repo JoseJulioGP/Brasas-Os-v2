@@ -76,6 +76,16 @@ const deactivateUser = async (req, res) => {
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
+const getMisEmpleados = async (req, res) => {
+  try {
+    const empleados = await usersService.getMisEmpleados(req.user.local_id);
+    res.status(200).json(empleados);
+  } catch (error) {
+    console.error('Error getting empleados:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
 const getCodigoInvitacion = async (req, res) => {
   try {
     const data = await usersService.getCodigoInvitacion(req.user.id);
@@ -102,6 +112,7 @@ module.exports = {
   getUserById,
   updateUser,
   deactivateUser,
+  getMisEmpleados,
   getCodigoInvitacion,
   generarCodigoInvitacion,
 };

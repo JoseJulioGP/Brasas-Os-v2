@@ -96,6 +96,18 @@ class UsersService {
         return { message: "Usuario desactivado correctamente" };
     }
 
+    async getMisEmpleados(local_id) {
+        const result = await db.query(
+            `SELECT u.id, u.nombre, u.email, u.activo, u.created_at, r.nombre as rol_nombre
+             FROM usuarios u
+             JOIN roles r ON u.rol_id = r.id
+             WHERE u.local_id = $1 AND u.activo = true AND UPPER(r.nombre) = 'EMPLEADO'
+             ORDER BY u.created_at DESC`,
+            [local_id]
+        );
+        return result.rows;
+    }
+
     async getCodigoInvitacion(userId) {
         const result = await db.query(
             "SELECT codigo_invitacion FROM usuarios WHERE id = $1",
