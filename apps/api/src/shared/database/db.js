@@ -11,9 +11,9 @@ const pool = new Pool({
     rejectUnauthorized: false // Obligatorio para Supabase
   },
   // Configuración de optimización para Brasas-OS
-  max: 10, // Máximo de conexiones simultáneas
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // 10s para tolerar latencia de Supabase
+  max: 3,                    // Supabase free tier: máximo 15 conexiones totales
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 15000,
 });
 
 // Prueba de fuego: Verificar la conexión al iniciar
