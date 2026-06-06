@@ -99,10 +99,10 @@ class ReportesService {
 
     const pedidosResult = await db.query(
       `SELECT
-         COUNT(*)                                                        AS total_pedidos,
-         COUNT(CASE WHEN estado::text = 'completado'  THEN 1 END)      AS completados,
-         COUNT(CASE WHEN estado::text = 'preparando'  THEN 1 END)      AS en_proceso,
-         COUNT(CASE WHEN estado::text = 'pendiente'   THEN 1 END)      AS pendientes
+         COUNT(*)                                                     AS total_pedidos,
+         COUNT(CASE WHEN estado::text = 'completado' THEN 1 END)    AS completados,
+         COUNT(CASE WHEN estado::text = 'preparando' THEN 1 END)    AS en_proceso,
+         COUNT(CASE WHEN estado::text = 'pendiente'  THEN 1 END)    AS pendientes
        FROM pedidos
        WHERE empleado_id = $1 AND local_id = $2 AND created_at >= $3`,
       [empleado_id, local_id, hoy]
