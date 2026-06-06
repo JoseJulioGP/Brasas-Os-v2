@@ -35,4 +35,13 @@ export const menuService = {
     const { data } = await api.get("/productos/categorias");
     return data;
   },
+
+  async createCategoria(nombre) {
+    const { data } = await api.post("/productos/categorias", { nombre });
+    return data;
+  },
+
+  async deleteCategoria(id) {
+    await api.delete(`/productos/categorias/${id}`);
+  },
 };
