@@ -8,7 +8,7 @@ class InventarioService {
     const sql = `SELECT id, nombre, tipo, unidad_medida, stock_actual, stock_minimo,
                         costo_unitario_prom, activo, created_at
                  FROM insumos
-                 WHERE activo = true AND local_id = $1
+                 WHERE activo = true AND local_id IS NOT DISTINCT FROM $1
                  ORDER BY nombre`;
     const result = await db.query(sql, [local_id]);
     return result.rows;
@@ -18,7 +18,7 @@ class InventarioService {
     const sql = `SELECT id, nombre, tipo, unidad_medida, stock_actual, stock_minimo,
                         costo_unitario_prom, activo, created_at
                  FROM insumos
-                 WHERE id = $1 AND local_id = $2`;
+                 WHERE id = $1 AND local_id IS NOT DISTINCT FROM $2`;
     const result = await db.query(sql, [id, local_id]);
     return result.rows[0];
   }
@@ -62,11 +62,23 @@ class InventarioService {
   }
 
   async deleteInsumo(id, local_id) {
-    const result = await db.query(
-      `DELETE FROM insumos WHERE id = $1 AND local_id = $2 RETURNING id`,
-      [id, local_id]
-    );
-    return result.rows[0] || null;
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`DELETE FROM stock_movimientos WHERE insumo_id = $1`, [id]);
+      await client.query(`DELETE FROM producto_insumos WHERE insumo_id = $1`, [id]);
+      const result = await client.query(
+        `DELETE FROM insumos WHERE id = $1 AND local_id IS NOT DISTINCT FROM $2 RETURNING id`,
+        [id, local_id]
+      );
+      await client.query('COMMIT');
+      return result.rows[0] || null;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   async updateStockMinimo(id, stock_minimo, local_id) {
@@ -83,7 +95,7 @@ class InventarioService {
     let sql = `SELECT sm.*, i.nombre as insumo_nombre, i.unidad_medida
                FROM stock_movimientos sm
                INNER JOIN insumos i ON sm.insumo_id = i.id
-               WHERE i.local_id = $1`;
+               WHERE i.local_id IS NOT DISTINCT FROM $1`;
     const values = [filtros.local_id];
     let i = 2;
 
@@ -103,7 +115,7 @@ class InventarioService {
       await client.query('BEGIN');
 
       const insumoResult = await client.query(
-        'SELECT stock_actual, stock_minimo FROM insumos WHERE id = $1 AND local_id = $2',
+        'SELECT stock_actual, stock_minimo FROM insumos WHERE id = $1 AND local_id IS NOT DISTINCT FROM $2',
         [data.insumo_id, data.local_id]
       );
       const insumo = insumoResult.rows[0];

@@ -16,7 +16,7 @@ const createPedido = async (req, res) => {
   }
 
   try {
-    const pedido = await pedidosService.createPedido(empleado_id, items);
+    const pedido = await pedidosService.createPedido(empleado_id, req.user.local_id, items);
     res.status(201).json(pedido);
   } catch (error) {
     if (error.message && error.message.includes('no encontrado')) {
@@ -71,10 +71,13 @@ const updateEstado = async (req, res) => {
   const empleado_id = req.user.id;
   const rol = req.user.rol;
 
-  const estadosValidos = ['pendiente', 'preparando', 'entregado'];
+  const estadosValidos = ['pendiente', 'preparando', 'completado'];
   if (!estadosValidos.includes(estado)) {
     return res.status(400).json({ message: 'Estado inválido. Valores permitidos: pendiente, preparando, entregado' });
   }
+
+  // Permitir saltar directamente de pendiente a entregado (sin pasar por preparando)
+  // El pedido se completa directamente al registrar el pago
 
   try {
     const pedido = await pedidosService.getPedidoById(id);
@@ -88,19 +91,19 @@ const updateEstado = async (req, res) => {
     if (pedido.estado === 'cancelado') {
       return res.status(400).json({ message: 'No se puede cambiar el estado de un pedido cancelado' });
     }
-    if (pedido.estado === 'entregado') {
+    if (pedido.estado === 'completado') {
       return res.status(400).json({ message: 'No se puede cambiar el estado de un pedido completado' });
     }
 
-    // Validar que no se retrocede
-    const estadosOrden = { 'pendiente': 0, 'preparando': 1, 'entregado': 2 };
+    // Validar que no se retrocede (pero sí se puede saltar de pendiente a entregado)
+    const estadosOrden = { 'pendiente': 0, 'preparando': 1, 'completado': 2 };
     if (estadosOrden[estado] < estadosOrden[pedido.estado]) {
-      return res.status(400).json({ message: 'No puedes retroceder el estado del pedido' });
+      return res.status(400).json({ message: 'No podés retroceder el estado del pedido' });
     }
 
     let pedidoActualizado;
 
-    if (estado === 'entregado') {
+    if (estado === 'completado') {
       pedidoActualizado = await pedidosService.completarPedido(id, req.user.id, req.user.local_id);
     } else {
       pedidoActualizado = await pedidosService.updateEstado(id, estado);
@@ -111,11 +114,8 @@ const updateEstado = async (req, res) => {
     if (error.message === 'PEDIDO_NO_ENCONTRADO') {
       return res.status(404).json({ message: 'Pedido no encontrado' });
     }
-    if (error.message && error.message.startsWith('STOCK_CARNE_INSUFICIENTE')) {
-      const corte = error.message.split(':')[1];
-      return res.status(409).json({
-        message: `Stock insuficiente de carne: ${corte}. El pedido NO fue marcado como completado.`
-      });
+    if (error.message === 'PEDIDO_YA_COMPLETADO') {
+      return res.status(409).json({ message: 'El pedido ya fue completado' });
     }
     if (error.message && error.message.startsWith('STOCK_INSUMO_INSUFICIENTE')) {
       const insumo = error.message.split(':')[1];
@@ -149,7 +149,7 @@ const updatePedido = async (req, res) => {
   }
 
   try {
-    const pedido = await pedidosService.updatePedido(id, items);
+    const pedido = await pedidosService.updatePedido(id, req.user.local_id, items);
     if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
     res.status(200).json(pedido);
   } catch (error) {
