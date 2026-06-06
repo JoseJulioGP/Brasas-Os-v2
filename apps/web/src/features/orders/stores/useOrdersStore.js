@@ -89,6 +89,23 @@ export const useOrdersStore = create((set, get) => ({
     }
   },
 
+  cancelOrder: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await ordersService.cancelOrder(id);
+      set((state) => ({
+        orders: state.orders.map((o) => o.id === id ? { ...o, estado: "cancelado" } : o),
+        isLoading: false,
+      }));
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Error al cancelar pedido",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
   clearCurrentOrder: () => set({ currentOrder: null }),
   clearError: () => set({ error: null }),
 }));

@@ -13,8 +13,8 @@ export const OrderFilters = ({ search, onSearchChange, estado, onEstadoChange })
         className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-2.5 text-sm text-white/70 focus:outline-none focus:border-orange-500/30 transition-colors font-body">
         <option value="">Todos los estados</option>
         <option value="pendiente">Pendiente</option>
-        <option value="en_proceso">En Proceso</option>
-        <option value="completado">Completado</option>
+        <option value="preparando">En Proceso</option>
+        <option value="entregado">Completado</option>
         <option value="cancelado">Cancelado</option>
       </select>
     </div>

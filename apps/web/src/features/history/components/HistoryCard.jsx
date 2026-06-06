@@ -15,6 +15,7 @@ export const HistoryCard = ({ item, columns }) => (
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
+          {item.id && <span className="text-[10px] text-white/20 font-number">#{item.id.slice(0, 8)}</span>}
           <ActionBadge tipo={item.accion} />
           {item.entidad && (
             <span className="text-xs text-white/30 bg-white/[0.04] px-2 py-0.5 rounded-full font-body border border-white/[0.06]">
@@ -26,8 +27,10 @@ export const HistoryCard = ({ item, columns }) => (
           )}
         </div>
 
-        {item.detalle?.descripcion && (
-          <p className="text-sm text-white/60 font-body truncate">{item.detalle.descripcion}</p>
+        {(item.detalle?.descripcion || typeof item.detalle === "string") && (
+          <p className="text-sm text-white/60 font-body truncate">
+            {item.detalle?.descripcion || item.detalle}
+          </p>
         )}
 
         <div className="flex flex-wrap items-center gap-3 mt-2">

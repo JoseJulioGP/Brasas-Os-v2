@@ -31,11 +31,12 @@ const getNavItems = (rol) => {
   ];
 
   const jefeItems = [
-    { path: "/analisis", label: "Análisis", icon: FaChartLine },
-    { path: "/menu", label: "Menú", icon: FaUtensils },
-    { path: "/inventory", label: "Inventario", icon: FaBox },
-    { path: "/pedidos", label: "Pedidos", icon: FaShoppingCart },
-    { path: "/historial", label: "Historial", icon: FaHistory },
+    { path: "/analisis",    label: "Análisis",    icon: FaChartLine },
+    { path: "/menu",        label: "Menú",        icon: FaUtensils  },
+    { path: "/inventory",   label: "Inventario",  icon: FaBox       },
+    { path: "/pedidos",     label: "Pedidos",     icon: FaShoppingCart },
+    { path: "/historial",   label: "Historial",   icon: FaHistory   },
+    { path: "/jefe/equipo", label: "Mi Equipo",   icon: FaUsers     },
   ];
 
   const empleadoItems = [

@@ -10,6 +10,7 @@ import ActionHistory from "./ActionHistory";
 import { FinancialHighlightCards } from "./FinancialHighlightCards";
 import { QuickActions } from "./QuickActions";
 import { TopProducts } from "./TopProducts";
+import { CodigoInvitacion } from "../../users/components/CodigoInvitacion";
 
 const Spinner = () => (
   <div className="flex items-center justify-center py-20">
@@ -81,6 +82,12 @@ const DashboardPage = () => {
             </div>
 
             <TopProducts products={topProducts} />
+
+            {(user?.rol === "JEFE" || user?.rol === "ADMIN") && (
+              <div className="mt-5">
+                <CodigoInvitacion />
+              </div>
+            )}
 
             <ActionHistory history={actionHistory} />
           </>

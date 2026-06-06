@@ -9,8 +9,12 @@ export const authService = {
     return user;
   },
 
-  async register(nombre, email, password) {
-    const { data } = await api.post("/auth/register", { nombre, email, password });
+  async register(nombre, email, password, tipo_registro = "jefe", codigo_invitacion = null) {
+    const body = { nombre, email, password, tipo_registro };
+    if (tipo_registro === "empleado" && codigo_invitacion) {
+      body.codigo_invitacion = codigo_invitacion;
+    }
+    const { data } = await api.post("/auth/register", body);
     const user = { ...data.user, rol: (data.user.rol || "").toUpperCase() };
     localStorage.setItem("brasas_token", data.token);
     localStorage.setItem("brasas_user", JSON.stringify(user));
