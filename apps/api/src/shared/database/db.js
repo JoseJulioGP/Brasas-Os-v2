@@ -16,19 +16,26 @@ const pool = new Pool({
   connectionTimeoutMillis: 15000,
 });
 
-// Prueba de fuego: Verificar la conexión al iniciar
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('❌ Error de conexión en Brasas-OS:', err.stack);
-  }
-  client.query('SELECT NOW()', (err, result) => {
-    release(); // Liberar la conexión de vuelta al pool
+// Verificar conexión al iniciar con reintentos automáticos
+const verificarConexion = (intento = 1) => {
+  pool.connect((err, client, release) => {
     if (err) {
-      return console.error('❌ Error ejecutando query inicial:', err.stack);
+      console.warn(`⏳ Supabase no responde (intento ${intento}) — reintentando en 5s...`);
+      setTimeout(() => verificarConexion(intento + 1), 5000);
+      return;
     }
-    console.log('✅ Brasas-OS conectado a Supabase con éxito en el puerto', process.env.DB_PORT);
+    client.query('SELECT NOW()', (err) => {
+      release();
+      if (err) {
+        console.warn(`⏳ Query inicial falló (intento ${intento}) — reintentando en 5s...`);
+        setTimeout(() => verificarConexion(intento + 1), 5000);
+        return;
+      }
+      console.log('✅ Brasas-OS conectado a Supabase con éxito en el puerto', process.env.DB_PORT);
+    });
   });
-});
+};
+verificarConexion();
 
 module.exports = {
   query: (text, params) => pool.query(text, params),
