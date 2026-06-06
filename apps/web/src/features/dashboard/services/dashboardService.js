@@ -32,7 +32,7 @@ export const fetchFinancialSummary = async (periodo) => {
       const { data: pedidos } = await api.get("/pedidos/todos", {
         params: { fecha_inicio: fechaInicio.toISOString() },
       });
-      const completados = (pedidos || []).filter((p) => p.estado === "entregado");
+      const completados = (pedidos || []).filter((p) => p.estado === "completado");
       const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
       return { ingresos, costos: 0, ganancia: ingresos, margen: 0, utilidad_positiva: ingresos > 0, variacion_utilidad: null };
     } catch {
@@ -51,7 +51,7 @@ export const fetchStats = async (periodo) => {
     ]);
     const pedidos = pedidosRes.status === "fulfilled" ? (pedidosRes.value.data || []) : [];
     const insumos = insumosRes.status === "fulfilled" ? (insumosRes.value.data || []) : [];
-    const completados = pedidos.filter((p) => p.estado === "entregado");
+    const completados = pedidos.filter((p) => p.estado === "completado");
     const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
     const stockTotal = insumos.reduce((s, i) => s + (parseFloat(i.stock_actual) || 0), 0);
     return {
