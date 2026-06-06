@@ -30,7 +30,7 @@ async function calcularMetricas(inicio, fin) {
   const ingresosResult = await db.query(
     `SELECT COALESCE(SUM(total), 0) AS ingresos
      FROM pedidos
-     WHERE estado = 'entregado' AND created_at BETWEEN $1 AND $2`,
+     WHERE estado = 'completado' AND created_at BETWEEN $1 AND $2`,
     [inicio, fin]
   );
 
@@ -39,7 +39,7 @@ async function calcularMetricas(inicio, fin) {
      FROM pedido_items pi
      JOIN productos p   ON pi.producto_id = p.id
      JOIN pedidos ped   ON pi.pedido_id   = ped.id
-     WHERE ped.estado = 'entregado'
+     WHERE ped.estado = 'completado'
        AND ped.created_at BETWEEN $1 AND $2
        AND p.costo_produccion IS NOT NULL`,
     [inicio, fin]
@@ -97,7 +97,7 @@ class ReportesService {
     const pedidosResult = await db.query(
       `SELECT
          COUNT(*)                                               AS total_pedidos,
-         COUNT(CASE WHEN estado = 'entregado'   THEN 1 END)   AS completados,
+         COUNT(CASE WHEN estado = 'completado'   THEN 1 END)   AS completados,
          COUNT(CASE WHEN estado = 'preparando'  THEN 1 END)   AS en_proceso,
          COUNT(CASE WHEN estado = 'pendiente'   THEN 1 END)   AS pendientes
        FROM pedidos
@@ -110,7 +110,7 @@ class ReportesService {
        FROM pedido_items pi
        JOIN productos p ON pi.producto_id = p.id
        JOIN pedidos ped ON pi.pedido_id = ped.id
-       WHERE ped.estado = 'entregado' AND ped.created_at >= $1
+       WHERE ped.estado = 'completado' AND ped.created_at >= $1
        GROUP BY p.id, p.nombre
        ORDER BY total_vendido DESC
        LIMIT 3`,
