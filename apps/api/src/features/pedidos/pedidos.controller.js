@@ -160,7 +160,21 @@ const updatePedido = async (req, res) => {
 
 const cancelPedido = async (req, res) => {
   const { id } = req.params;
+  const rol = req.user.rol;
+  const empleado_id = req.user.id;
+
   try {
+    const pedido = await pedidosService.getPedidoById(id);
+    if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
+
+    if (rol === 'EMPLEADO' && pedido.empleado_id !== empleado_id) {
+      return res.status(403).json({ message: 'No puedes cancelar este pedido' });
+    }
+
+    if (!['pendiente', 'preparando'].includes(pedido.estado)) {
+      return res.status(400).json({ message: 'Solo se pueden cancelar pedidos pendientes o en preparación' });
+    }
+
     const resultado = await pedidosService.cancelPedido(id, req.user.id, req.user.local_id);
     if (!resultado) return res.status(404).json({ message: 'Pedido no encontrado' });
     res.status(200).json({ message: 'Pedido cancelado correctamente' });

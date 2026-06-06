@@ -12,8 +12,8 @@ router.get('/', verifyToken, pedidosController.getPedidos);
 router.get('/:id', verifyToken, pedidosController.getPedidoById);
 router.put('/:id/estado', verifyToken, pedidosController.updateEstado);
 
-// Solo ADMIN puede editar o cancelar cualquier pedido
+// ADMIN edita cualquier pedido; cancelar es para todos (el controller valida propiedad para EMPLEADO)
 router.put('/:id', verifyToken, requireRole('ADMIN'), pedidosController.updatePedido);
-router.delete('/:id', verifyToken, requireRole('ADMIN'), pedidosController.cancelPedido);
+router.delete('/:id', verifyToken, pedidosController.cancelPedido);
 
 module.exports = router;
