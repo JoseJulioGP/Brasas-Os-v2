@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaTimes, FaUtensils, FaTrash } from "react-icons/fa";
+import { FaPlus, FaTimes, FaUtensils, FaTrash, FaTag } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
 import { menuService } from "../services/menuService";
 import useInventoryStore from "../../inventory/stores/useInventoryStore";
@@ -7,6 +7,7 @@ import { MenuFilters } from "./MenuFilters";
 import { MenuTable } from "./MenuTable";
 import { MenuMobileList } from "./MenuMobileList";
 import { MenuFormModal } from "./MenuFormModal";
+import { CategoriasModal } from "./CategoriasModal";
 
 export const MenuPage = () => {
   const { items, isLoading, error, fetchAll, create, update, remove, clearError } = useMenuStore();
@@ -17,7 +18,8 @@ export const MenuPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing]     = useState(null);
   const [categorias, setCategorias] = useState([]);
-  const [deleteId, setDeleteId]     = useState(null);
+  const [deleteId, setDeleteId]       = useState(null);
+  const [showCategorias, setShowCategorias] = useState(false);
 
   useEffect(() => {
     clearError();
@@ -72,10 +74,16 @@ export const MenuPage = () => {
               <p className="text-sm text-white/40 font-body">Carta del local con precios y márgenes</p>
             </div>
           </div>
-          <button onClick={openCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
-            <FaPlus /> Nuevo Plato
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setShowCategorias(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white/60 rounded-xl font-medium text-sm hover:bg-white/[0.08] hover:text-white/80 transition-all font-body">
+              <FaTag className="text-xs" /> Categorías
+            </button>
+            <button onClick={openCreate}
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
+              <FaPlus /> Nuevo Plato
+            </button>
+          </div>
         </div>
 
         <MenuFilters search={search} onSearchChange={setSearch} categoria={categoria} onCategoriaChange={setCategoria} categorias={categorias} />
@@ -136,6 +144,14 @@ export const MenuPage = () => {
           </div>
         </div>
       )}
+
+      <CategoriasModal
+        isOpen={showCategorias}
+        onClose={() => setShowCategorias(false)}
+        categorias={categorias}
+        onCategoriaCreada={(nueva) => setCategorias(prev => [...prev, nueva].sort((a,b) => a.nombre.localeCompare(b.nombre)))}
+        onCategoriaEliminada={(id) => { setCategorias(prev => prev.filter(c => c.id !== id)); if (categoria === id) setCategoria(""); }}
+      />
 
       <MenuFormModal isOpen={showModal} editing={editing} isLoading={isLoading}
         allInsumos={allInsumos} categorias={categorias} onSubmit={handleSubmit} onClose={() => setShowModal(false)} />
