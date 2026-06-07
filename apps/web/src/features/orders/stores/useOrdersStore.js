@@ -69,10 +69,10 @@ export const useOrdersStore = create((set, get) => ({
     }
   },
 
-  updateOrderStatus: async (id, estado) => {
+  updateOrderStatus: async (id, estado, pago = null) => {
     set({ isLoading: true, error: null });
     try {
-      const updatedOrder = await ordersService.updateOrderStatus(id, estado);
+      const updatedOrder = await ordersService.updateOrderStatus(id, estado, pago);
       set((state) => ({
         orders: state.orders.map((o) => (o.id === id ? updatedOrder : o)),
         currentOrder:

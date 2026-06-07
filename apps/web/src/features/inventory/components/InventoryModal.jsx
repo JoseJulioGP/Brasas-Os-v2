@@ -36,13 +36,19 @@ const InventoryModal = ({ isOpen, onClose, onAdd, onEdit, editing }) => {
 
   useEffect(() => {
     if (editing) {
+      const limpiar = (v) => {
+        const n = parseFloat(v);
+        if (isNaN(n) || v === "" || v == null) return "";
+        // Elimina ceros decimales innecesarios: 2.0000 → "2", 0.08000 → "0.08"
+        return parseFloat(n.toPrecision(10)).toString();
+      };
       setForm({
         nombre:              editing.nombre              || "",
         tipo:                editing.tipo                || "insumo",
         unidad_medida:       editing.unidad_medida       || "unidad",
-        stock_actual:        editing.stock_actual        ?? "",
-        stock_minimo:        editing.stock_minimo        ?? "",
-        costo_unitario_prom: editing.costo_unitario_prom ?? "",
+        stock_actual:        limpiar(editing.stock_actual),
+        stock_minimo:        limpiar(editing.stock_minimo),
+        costo_unitario_prom: limpiar(editing.costo_unitario_prom),
       });
     } else {
       setForm(initial);

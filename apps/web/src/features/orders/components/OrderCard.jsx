@@ -41,7 +41,13 @@ export const OrderCard = ({ order, onStatusChange, onCancel }) => {
   const handlePagoConfirm = (pagoData) => {
     setPago(pagoData);
     setShowPayment(false);
-    onStatusChange(order.id, "completado");
+    // Normalizar el pago para el backend
+    const pagoBackend = {
+      metodo:        pagoData.metodo,
+      efectivo:      pagoData.metodo === "ambos" ? pagoData.efectivo : (pagoData.metodo === "efectivo" ? order.total : 0),
+      transferencia: pagoData.metodo === "ambos" ? pagoData.transferencia : (pagoData.metodo === "transferencia" ? order.total : 0),
+    };
+    onStatusChange(order.id, "completado", pagoBackend);
   };
 
   const PagoInfo = pago && PAGO_ICONS[pago.metodo];

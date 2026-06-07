@@ -57,6 +57,7 @@ export const InventoryPage = () => {
 
   const [tab, setTab]             = useState("insumos");
   const [search, setSearch]       = useState("");
+  const [tipoFiltro, setTipoFiltro] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing]     = useState(null);
   const [deleteId, setDeleteId]   = useState(null);
@@ -68,9 +69,14 @@ export const InventoryPage = () => {
     if (tab === "movimientos") fetchMovimientos();
   }, [tab, fetchMovimientos]);
 
-  const filteredInsumos = (insumos || []).filter((i) =>
-    i.nombre?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Tipos únicos presentes en los insumos cargados
+  const tiposDisponibles = [...new Set((insumos || []).map((i) => i.tipo).filter(Boolean))].sort();
+
+  const filteredInsumos = (insumos || []).filter((i) => {
+    const matchSearch = i.nombre?.toLowerCase().includes(search.toLowerCase());
+    const matchTipo   = !tipoFiltro || i.tipo === tipoFiltro;
+    return matchSearch && matchTipo;
+  });
 
   const handleAdd = async (data) => { await addInsumo(data); };
 
@@ -134,11 +140,43 @@ export const InventoryPage = () => {
         </div>
 
         {tab === "insumos" && (
-          <div className="relative max-w-md mb-6 animate-fade-in-up opacity-0 stagger-2">
-            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
-            <input type="text" placeholder="Buscar insumo..." value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body" />
+          <div className="mb-6 space-y-3 animate-fade-in-up opacity-0 stagger-2">
+            <div className="relative max-w-md">
+              <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
+              <input type="text" placeholder="Buscar insumo..." value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body" />
+            </div>
+
+            {tiposDisponibles.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setTipoFiltro("")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body ${
+                    tipoFiltro === ""
+                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                      : "text-white/40 hover:text-white/70 bg-white/[0.04] border border-transparent"
+                  }`}>
+                  Todos
+                </button>
+                {tiposDisponibles.map((tipo) => {
+                  const count = (insumos || []).filter((i) => i.tipo === tipo).length;
+                  return (
+                    <button key={tipo} onClick={() => setTipoFiltro(tipo)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all font-body flex items-center gap-1.5 ${
+                        tipoFiltro === tipo
+                          ? "bg-orange-500/15 text-orange-400 border border-orange-500/30"
+                          : "text-white/40 hover:text-white/70 bg-white/[0.04] border border-transparent"
+                      }`}>
+                      {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        tipoFiltro === tipo ? "bg-orange-500/20" : "bg-white/[0.06]"
+                      }`}>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -148,7 +186,14 @@ export const InventoryPage = () => {
           filteredInsumos.length === 0 ? (
             <div className="glass rounded-2xl p-12 text-center">
               <FiPackage className="text-4xl text-white/20 mx-auto mb-4" />
-              <p className="text-white/50 font-body">No hay insumos registrados</p>
+              <p className="text-white/50 font-body">
+                {search || tipoFiltro ? "No se encontraron insumos con ese filtro" : "No hay insumos registrados"}
+              </p>
+              {tipoFiltro && (
+                <button onClick={() => setTipoFiltro("")} className="mt-2 text-xs text-orange-400 hover:underline font-body">
+                  Ver todos
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-3 animate-fade-in-up opacity-0 stagger-3">

@@ -6,8 +6,8 @@ export const analyticsService = {
     return data;
   },
 
-  async getResumen() {
-    const { data } = await api.get("/dashboard");
+  async getResumen(periodo = "mensual") {
+    const { data } = await api.get(`/reportes/resumen?periodo=${periodo}`);
     return data;
   },
 
@@ -18,6 +18,16 @@ export const analyticsService = {
 
   async getProyecciones() {
     const { data } = await api.get("/reportes/proyecciones");
+    return data;
+  },
+
+  async getResumenPagos(periodo = "mensual") {
+    const { data } = await api.get(`/reportes/pagos?periodo=${periodo}`);
+    return data;
+  },
+
+  async getTopProductos(periodo = "mensual") {
+    const { data } = await api.get(`/reportes/top-productos?periodo=${periodo}`);
     return data;
   },
 };

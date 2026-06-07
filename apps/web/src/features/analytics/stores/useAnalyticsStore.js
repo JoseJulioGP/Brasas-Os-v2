@@ -5,9 +5,12 @@ export const useAnalyticsStore = create((set) => ({
   productos: [],
   proyecciones: null,
   resumen: null,
+  pagos: null,
+  topProductos: [],
   tendencias: [],
   isLoading: false,
   isLoadingProyecciones: false,
+  isLoadingResumen: false,
   error: null,
 
   fetchMargenes: async () => {
@@ -37,6 +40,16 @@ export const useAnalyticsStore = create((set) => ({
     }
   },
 
+  fetchResumen: async (periodo = "mensual") => {
+    set({ isLoadingResumen: true });
+    try {
+      const data = await analyticsService.getResumen(periodo);
+      set({ resumen: data, isLoadingResumen: false });
+    } catch {
+      set({ isLoadingResumen: false });
+    }
+  },
+
   fetchProyecciones: async () => {
     set({ isLoadingProyecciones: true });
     try {
@@ -44,6 +57,24 @@ export const useAnalyticsStore = create((set) => ({
       set({ proyecciones: data, isLoadingProyecciones: false });
     } catch {
       set({ isLoadingProyecciones: false });
+    }
+  },
+
+  fetchPagos: async (periodo = "mensual") => {
+    try {
+      const data = await analyticsService.getResumenPagos(periodo);
+      set({ pagos: data });
+    } catch {
+      set({ pagos: null });
+    }
+  },
+
+  fetchTopProductos: async (periodo = "mensual") => {
+    try {
+      const data = await analyticsService.getTopProductos(periodo);
+      set({ topProductos: Array.isArray(data) ? data : [] });
+    } catch {
+      set({ topProductos: [] });
     }
   },
 

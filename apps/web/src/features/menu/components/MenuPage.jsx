@@ -47,7 +47,7 @@ export const MenuPage = () => {
 
   const handleSubmit = async (data) => {
     try {
-      if (editing) await update(editing.id, data);
+      if (editing?.id) await update(editing.id, data);
       else await create(data);
       setShowModal(false);
     } catch { /* error queda en store */ }
@@ -56,6 +56,21 @@ export const MenuPage = () => {
   const handleDelete = (id) => setDeleteId(id);
 
   const confirmDelete = () => { remove(deleteId); setDeleteId(null); };
+
+  const handleDuplicate = async (item) => {
+    try {
+      const full = await menuService.getById(item.id);
+      setEditing({
+        ...full,
+        id:     null,                          // sin id → se crea nuevo
+        nombre: `${full.nombre} (copia)`,      // nombre diferenciado
+      });
+      setShowModal(true);
+    } catch {
+      setEditing({ ...item, id: null, nombre: `${item.nombre} (copia)` });
+      setShowModal(true);
+    }
+  };
 
   return (
     <div className="min-h-screen relative p-4 md:p-8">
@@ -81,7 +96,7 @@ export const MenuPage = () => {
             </button>
             <button onClick={openCreate}
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
-              <FaPlus /> Nuevo Plato
+              <FaPlus /> Nuevo Producto
             </button>
           </div>
         </div>
@@ -106,14 +121,14 @@ export const MenuPage = () => {
           <div className="glass rounded-2xl p-16 text-center animate-fade-in-up opacity-0 stagger-2">
             <FaUtensils className="text-5xl text-white/10 mx-auto mb-4" />
             <p className="text-white/40 font-body text-lg">
-              {search || categoria ? "No se encontraron platos" : "El menú está vacío"}
+              {search || categoria ? "No se encontraron productos" : "El menú está vacío"}
             </p>
-            <p className="text-white/20 text-sm font-body mt-1">Agregá tu primer plato para empezar</p>
+            <p className="text-white/20 text-sm font-body mt-1">Agregá tu primer producto para empezar</p>
           </div>
         ) : (
           <>
-            <MenuMobileList items={filtered} onEdit={openEdit} onDelete={handleDelete} />
-            <MenuTable      items={filtered} onEdit={openEdit} onDelete={handleDelete} />
+            <MenuMobileList items={filtered} onEdit={openEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
+            <MenuTable      items={filtered} onEdit={openEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
           </>
         )}
       </div>
@@ -127,7 +142,7 @@ export const MenuPage = () => {
                 <FaTrash className="text-red-400 text-sm" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-[#f5f0eb]" style={{ fontFamily: "Georgia, serif" }}>Eliminar plato</h3>
+                <h3 className="text-base font-bold text-[#f5f0eb]" style={{ fontFamily: "Georgia, serif" }}>Eliminar producto</h3>
                 <p className="text-sm text-white/40 mt-0.5">Esta acción no se puede deshacer.</p>
               </div>
             </div>

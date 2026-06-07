@@ -1,12 +1,12 @@
-import { FaEdit, FaTimes, FaTrophy } from "react-icons/fa";
+import { FaEdit, FaTimes, FaTrophy, FaCopy } from "react-icons/fa";
 
-export const MenuTable = ({ items, onEdit, onDelete }) => (
+export const MenuTable = ({ items, onEdit, onDelete, onDuplicate }) => (
   <div className="hidden md:block animate-fade-in-up opacity-0 stagger-2">
     <div className="glass rounded-2xl overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="border-b border-white/[0.06]">
-            <th className="text-left px-6 py-4 text-xs font-medium text-white/30 font-body uppercase tracking-wider">Plato</th>
+            <th className="text-left px-6 py-4 text-xs font-medium text-white/30 font-body uppercase tracking-wider">Producto</th>
             <th className="text-left px-6 py-4 text-xs font-medium text-white/30 font-body uppercase tracking-wider">Categoría</th>
             <th className="text-right px-6 py-4 text-xs font-medium text-white/30 font-body uppercase tracking-wider">Precio Venta</th>
             <th className="text-right px-6 py-4 text-xs font-medium text-white/30 font-body uppercase tracking-wider">Costo Prod.</th>
@@ -52,6 +52,10 @@ export const MenuTable = ({ items, onEdit, onDelete }) => (
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => onDuplicate(item)} title="Duplicar producto"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-orange-400 hover:bg-orange-500/10 transition-all">
+                      <FaCopy className="text-xs" />
+                    </button>
                     <button onClick={() => onEdit(item)} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/[0.06] transition-all">
                       <FaEdit className="text-xs" />
                     </button>

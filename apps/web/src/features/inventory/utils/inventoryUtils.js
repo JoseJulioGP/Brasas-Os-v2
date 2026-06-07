@@ -23,7 +23,9 @@ export const getStockStatus = (item) => {
 export const getStockPercentage = (item) => {
   const actual = parseFloat(item.stock_actual ?? item.cantidad ?? 0);
   const minimo = parseFloat(item.stock_minimo ?? item.stockMinimo ?? 0);
-  const max    = minimo > 0 ? minimo * 3 : 1;
+  // El 100% de la barra es el mayor entre lo que hay actualmente y el doble del mínimo.
+  // Así la barra refleja el stock real sin inventar un "máximo" fijo.
+  const max = Math.max(actual, minimo * 2, 1);
   return Math.min((actual / max) * 100, 100);
 };
 

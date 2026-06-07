@@ -21,8 +21,8 @@ export const ordersService = {
     return response.data;
   },
 
-  async updateOrderStatus(id, estado) {
-    const response = await api.put(`/pedidos/${id}/estado`, { estado });
+  async updateOrderStatus(id, estado, pago = null) {
+    const response = await api.put(`/pedidos/${id}/estado`, { estado, ...(pago ? { pago } : {}) });
     return response.data;
   },
 
