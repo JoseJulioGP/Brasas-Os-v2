@@ -59,7 +59,7 @@ const InventoryCard = ({ item, onEdit, onDelete }) => {
             </div>
             <div className="flex justify-between text-[10px] text-white/30 mt-1 font-body">
               <span>Min: {stockMinimo}</span>
-              <span>Max: {stockMinimo > 0 ? stockMinimo * 3 : "—"}</span>
+              <span>Actual: {stockActual}</span>
             </div>
           </div>
 

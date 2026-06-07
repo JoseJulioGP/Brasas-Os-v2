@@ -8,7 +8,7 @@ export const MenuFilters = ({ search, onSearchChange, categoria, onCategoriaChan
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
           <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 text-sm" />
-          <input type="text" placeholder="Buscar plato..." value={search}
+          <input type="text" placeholder="Buscar producto..." value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 focus:outline-none focus:border-orange-500/30 transition-colors font-body" />
         </div>

@@ -5,7 +5,7 @@ export const MargenTable = ({ productos }) => (
     <table className="w-full">
       <thead>
         <tr className="border-b border-white/[0.04]">
-          <th className="text-left px-5 py-3 text-xs font-medium text-white/30 font-body">Plato</th>
+          <th className="text-left px-5 py-3 text-xs font-medium text-white/30 font-body">Producto</th>
           <th className="text-right px-5 py-3 text-xs font-medium text-white/30 font-body">Precio</th>
           <th className="text-right px-5 py-3 text-xs font-medium text-white/30 font-body">Costo</th>
           <th className="text-right px-5 py-3 text-xs font-medium text-white/30 font-body">Margen $</th>

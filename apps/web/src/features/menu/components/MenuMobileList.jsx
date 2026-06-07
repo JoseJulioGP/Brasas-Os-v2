@@ -1,4 +1,4 @@
-export const MenuMobileList = ({ items, onEdit, onDelete }) => (
+export const MenuMobileList = ({ items, onEdit, onDelete, onDuplicate }) => (
   <div className="md:hidden space-y-3 animate-fade-in-up opacity-0 stagger-2">
     {items.map((item) => {
       const margen = item.precio_venta - (item.costo_produccion || 0);
@@ -22,6 +22,9 @@ export const MenuMobileList = ({ items, onEdit, onDelete }) => (
             </div>
           )}
           <div className="flex gap-2 mt-3 pt-3 border-t border-white/[0.04]">
+            <button onClick={() => onDuplicate(item)} className="py-2 px-3 bg-orange-500/8 text-orange-400/70 rounded-xl text-xs hover:bg-orange-500/15 transition-all font-body" title="Duplicar">
+              Copiar
+            </button>
             <button onClick={() => onEdit(item)} className="flex-1 py-2 bg-white/[0.04] text-white/50 rounded-xl text-xs hover:bg-white/[0.08] transition-all font-body">
               Editar
             </button>
