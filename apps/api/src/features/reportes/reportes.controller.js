@@ -31,4 +31,14 @@ const getTurno = async (req, res) => {
   }
 };
 
-module.exports = { getResumen, getTurno };
+const getProyecciones = async (req, res) => {
+  try {
+    const proyecciones = await reportesService.getProyecciones(req.user.local_id);
+    res.status(200).json(proyecciones);
+  } catch (error) {
+    console.error('Error getting proyecciones:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getResumen, getTurno, getProyecciones };

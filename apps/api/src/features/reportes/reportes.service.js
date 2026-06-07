@@ -94,6 +94,95 @@ class ReportesService {
     };
   }
 
+  async getProyecciones(local_id) {
+    const ahora = new Date();
+    const anio  = ahora.getFullYear();
+
+    const ingresosResult = await db.query(
+      `SELECT
+         EXTRACT(MONTH FROM created_at)::int   AS mes,
+         COALESCE(SUM(total), 0)::float        AS ingresos
+       FROM pedidos
+       WHERE estado::text = 'completado'
+         AND local_id = $1
+         AND EXTRACT(YEAR FROM created_at) = $2
+       GROUP BY mes
+       ORDER BY mes`,
+      [local_id, anio]
+    );
+
+    const costosResult = await db.query(
+      `SELECT
+         EXTRACT(MONTH FROM ped.created_at)::int                    AS mes,
+         COALESCE(SUM(pi.cantidad * p.costo_produccion), 0)::float  AS costos
+       FROM pedido_items pi
+       JOIN productos p ON pi.producto_id = p.id
+       JOIN pedidos ped ON pi.pedido_id   = ped.id
+       WHERE ped.estado::text = 'completado'
+         AND ped.local_id = $1
+         AND EXTRACT(YEAR FROM ped.created_at) = $2
+         AND p.costo_produccion IS NOT NULL
+       GROUP BY mes
+       ORDER BY mes`,
+      [local_id, anio]
+    );
+
+    const ingresosMap = {};
+    for (const r of ingresosResult.rows) ingresosMap[r.mes] = r.ingresos;
+
+    const costosMap = {};
+    for (const r of costosResult.rows) costosMap[r.mes] = r.costos;
+
+    const mesesConDatos = ingresosResult.rows.filter(r => r.ingresos > 0);
+
+    // Tasa de crecimiento mensual compuesta (CAGR); 7 % por defecto si hay < 2 meses reales
+    let tasaCrecimiento = 0.07;
+    if (mesesConDatos.length >= 2) {
+      const primero   = mesesConDatos[0].ingresos;
+      const ultimo    = mesesConDatos[mesesConDatos.length - 1].ingresos;
+      const n         = mesesConDatos.length - 1;
+      const calculada = Math.pow(ultimo / primero, 1 / n) - 1;
+      tasaCrecimiento = Math.min(Math.max(calculada, -0.20), 0.30);
+    }
+
+    const ultimoMesReal = mesesConDatos.length > 0
+      ? mesesConDatos[mesesConDatos.length - 1].mes
+      : (ahora.getMonth() + 1);
+    const baseIngresos  = ingresosMap[ultimoMesReal] || 0;
+    const baseCostos    = costosMap[ultimoMesReal]   || 0;
+    const ratioCosto    = baseIngresos > 0 ? baseCostos / baseIngresos : 0.40;
+
+    const NOMBRES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    const meses = [];
+    for (let m = 1; m <= 12; m++) {
+      if (ingresosMap[m] !== undefined) {
+        meses.push({ mes: m, nombre: NOMBRES[m - 1], ingresos: ingresosMap[m], costos: costosMap[m] || 0, tipo: 'real' });
+      } else {
+        const distancia    = m - ultimoMesReal;
+        const ingresosProy = baseIngresos * Math.pow(1 + tasaCrecimiento, distancia);
+        meses.push({ mes: m, nombre: NOMBRES[m - 1], ingresos: Math.round(ingresosProy), costos: Math.round(ingresosProy * ratioCosto), tipo: 'proyectado' });
+      }
+    }
+
+    const totalIngresos = meses.reduce((s, m) => s + m.ingresos, 0);
+    const totalCostos   = meses.reduce((s, m) => s + m.costos,   0);
+    const margenPct     = totalIngresos > 0
+      ? ((totalIngresos - totalCostos) / totalIngresos) * 100
+      : 0;
+
+    return {
+      anio,
+      tasa_crecimiento_mensual: parseFloat((tasaCrecimiento * 100).toFixed(2)),
+      meses,
+      resumen: {
+        ingreso_total_potencial: totalIngresos,
+        costo_total_produccion:  totalCostos,
+        margen_promedio_pct:     parseFloat(margenPct.toFixed(2)),
+      },
+    };
+  }
+
   async getTurnoEmpleado(empleado_id, local_id) {
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
 
