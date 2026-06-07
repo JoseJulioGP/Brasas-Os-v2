@@ -16,7 +16,7 @@ const createPedido = async (req, res) => {
   }
 
   try {
-    const pedido = await pedidosService.createPedido(empleado_id, req.user.local_id, items);
+    const pedido = await pedidosService.createPedido(empleado_id, req.user.local_id, items, req.user.id);
     res.status(201).json(pedido);
   } catch (error) {
     if (error.message && error.message.includes('no encontrado')) {
@@ -104,7 +104,7 @@ const updateEstado = async (req, res) => {
     let pedidoActualizado;
 
     if (estado === 'completado') {
-      pedidoActualizado = await pedidosService.completarPedido(id, req.user.id, req.user.local_id);
+      pedidoActualizado = await pedidosService.completarPedido(id, req.user.id, req.user.local_id, req.body.pago || {});
     } else {
       pedidoActualizado = await pedidosService.updateEstado(id, estado, req.user.local_id);
     }

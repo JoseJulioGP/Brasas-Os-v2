@@ -41,4 +41,30 @@ const getProyecciones = async (req, res) => {
   }
 };
 
-module.exports = { getResumen, getTurno, getProyecciones };
+const getResumenPagos = async (req, res) => {
+  const { periodo } = req.query;
+  const periodosValidos = ['diario', 'semanal', 'mensual'];
+  const periodoFinal = periodosValidos.includes(periodo) ? periodo : 'mensual';
+  try {
+    const data = await reportesService.getResumenPagos(req.user.local_id, periodoFinal);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error getting resumen pagos:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+const getTopProductos = async (req, res) => {
+  const { periodo } = req.query;
+  const periodosValidos = ['diario', 'semanal', 'mensual'];
+  const periodoFinal = periodosValidos.includes(periodo) ? periodo : 'mensual';
+  try {
+    const data = await reportesService.getTopProductos(req.user.local_id, periodoFinal);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error('Error getting top productos:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getResumen, getTurno, getProyecciones, getResumenPagos, getTopProductos };

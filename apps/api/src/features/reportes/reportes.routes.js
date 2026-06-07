@@ -12,5 +12,7 @@ router.get('/turno', verifyToken, reportesController.getTurno);
 
 // Proyecciones financieras a 12 meses — solo JEFE y ADMIN
 router.get('/proyecciones', verifyToken, requireAnyRole('JEFE', 'ADMIN'), reportesController.getProyecciones);
+router.get('/pagos',        verifyToken, requireAnyRole('JEFE', 'ADMIN'), reportesController.getResumenPagos);
+router.get('/top-productos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), reportesController.getTopProductos);
 
 module.exports = router;

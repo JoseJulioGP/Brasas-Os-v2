@@ -76,6 +76,17 @@ class ReportesService {
       calcularMetricas(inicioAnterior, finAnterior, local_id)
     ]);
 
+    // Pedidos completados en el período
+    const pedidosResult = await db.query(
+      `SELECT COUNT(*) AS cantidad FROM pedidos
+       WHERE estado::text = 'completado' AND local_id = $1 AND created_at BETWEEN $2 AND $3`,
+      [local_id, inicio, fin]
+    );
+    const cantidad_pedidos = parseInt(pedidosResult.rows[0].cantidad) || 0;
+    const ticket_promedio  = cantidad_pedidos > 0
+      ? parseFloat((actual.ingresos / cantidad_pedidos).toFixed(0))
+      : 0;
+
     let variacion_utilidad = null;
     if (anterior.utilidad !== 0) {
       variacion_utilidad = parseFloat((((actual.utilidad - anterior.utilidad) / Math.abs(anterior.utilidad)) * 100).toFixed(2));
@@ -86,6 +97,8 @@ class ReportesService {
       fecha_inicio: inicio,
       fecha_fin: fin,
       ...actual,
+      cantidad_pedidos,
+      ticket_promedio,
       utilidad_positiva: actual.utilidad > 0,
       periodo_anterior: {
         ...anterior,
@@ -218,6 +231,91 @@ class ReportesService {
       pendientes:    parseInt(conteo.pendientes),
       top_productos: topProductosResult.rows
     };
+  }
+  async getResumenPagos(local_id, periodo = 'mensual') {
+    const { inicio, fin } = getRangos(periodo);
+
+    const result = await db.query(
+      `SELECT
+         COALESCE(metodo_pago, 'efectivo')            AS metodo_pago,
+         COUNT(*)                                      AS cantidad_pedidos,
+         COALESCE(SUM(total), 0)::float               AS total_recaudado,
+         -- Si monto_efectivo no está registrado, usar total cuando el método es efectivo
+         COALESCE(SUM(
+           CASE
+             WHEN monto_efectivo > 0 THEN monto_efectivo
+             WHEN metodo_pago IS NULL OR metodo_pago = 'efectivo' THEN total
+             ELSE 0
+           END
+         ), 0)::float AS total_efectivo,
+         COALESCE(SUM(
+           CASE
+             WHEN monto_transferencia > 0 THEN monto_transferencia
+             WHEN metodo_pago = 'transferencia' THEN total
+             ELSE 0
+           END
+         ), 0)::float AS total_transferencia
+       FROM pedidos
+       WHERE estado::text = 'completado'
+         AND local_id = $1
+         AND created_at BETWEEN $2 AND $3
+       GROUP BY COALESCE(metodo_pago, 'efectivo')
+       ORDER BY total_recaudado DESC`,
+      [local_id, inicio, fin]
+    );
+
+    const rows = result.rows;
+    const totalEfectivo      = rows.reduce((s, r) => s + (parseFloat(r.total_efectivo) || 0), 0);
+    const totalTransferencia = rows.reduce((s, r) => s + (parseFloat(r.total_transferencia) || 0), 0);
+    const totalGeneral       = rows.reduce((s, r) => s + (parseFloat(r.total_recaudado) || 0), 0);
+
+    return {
+      periodo,
+      total_general: totalGeneral,
+      total_efectivo: totalEfectivo,
+      total_transferencia: totalTransferencia,
+      por_metodo: rows.map(r => ({
+        metodo:       r.metodo_pago || 'sin_registrar',
+        pedidos:      parseInt(r.cantidad_pedidos),
+        total:        parseFloat(r.total_recaudado),
+        efectivo:     parseFloat(r.total_efectivo),
+        transferencia: parseFloat(r.total_transferencia),
+      })),
+    };
+  }
+  async getTopProductos(local_id, periodo = 'mensual') {
+    const { inicio, fin } = getRangos(periodo);
+
+    const result = await db.query(
+      `SELECT
+         p.id,
+         p.nombre,
+         p.precio_venta,
+         COALESCE(p.costo_produccion, 0)                          AS costo_produccion,
+         SUM(pi.cantidad)::int                                     AS cantidad_vendida,
+         COALESCE(SUM(pi.cantidad * pi.precio_unitario), 0)::float AS total_generado,
+         COALESCE(SUM(pi.cantidad * (pi.precio_unitario - COALESCE(p.costo_produccion, 0))), 0)::float AS ganancia_generada
+       FROM pedido_items pi
+       JOIN productos p  ON pi.producto_id = p.id
+       JOIN pedidos ped  ON pi.pedido_id   = ped.id
+       WHERE ped.estado::text = 'completado'
+         AND ped.local_id = $1
+         AND ped.created_at BETWEEN $2 AND $3
+       GROUP BY p.id, p.nombre, p.precio_venta, p.costo_produccion
+       ORDER BY cantidad_vendida DESC
+       LIMIT 8`,
+      [local_id, inicio, fin]
+    );
+
+    return result.rows.map(r => ({
+      id:               r.id,
+      nombre:           r.nombre,
+      precio_venta:     parseFloat(r.precio_venta) || 0,
+      costo_produccion: parseFloat(r.costo_produccion) || 0,
+      cantidad_vendida: r.cantidad_vendida,
+      total_generado:   r.total_generado,
+      ganancia_generada: r.ganancia_generada,
+    }));
   }
 }
 

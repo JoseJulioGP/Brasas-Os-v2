@@ -1,4 +1,6 @@
-const productosService = require('./productos.service');
+const productosService   = require('./productos.service');
+const historialService   = require('../historial/historial.service');
+const { TIPOS_ACCION, ENTIDADES } = require('../../shared/constants/audit');
 
 const getProductos = async (req, res) => {
   try {
@@ -33,6 +35,11 @@ const createProducto = async (req, res) => {
   }
   try {
     const producto = await productosService.create({ nombre, precio_venta, costo_produccion, categoria_id, insumos, local_id: req.user.local_id });
+    historialService.registrar({
+      usuario_id: req.user.id, local_id: req.user.local_id,
+      tipo_accion: TIPOS_ACCION.CREAR, entidad: ENTIDADES.PRODUCTOS,
+      entidad_id: producto.id, descripcion: `Producto creado: "${nombre}"`
+    }).catch(() => {});
     res.status(201).json(producto);
   } catch (error) {
     console.error('Error creating producto:', error);
@@ -49,6 +56,11 @@ const updateProducto = async (req, res) => {
   try {
     const producto = await productosService.update(id, { nombre, precio_venta, costo_produccion, categoria_id, activo, insumos }, req.user.local_id);
     if (!producto) return res.status(404).json({ message: 'Producto no encontrado' });
+    historialService.registrar({
+      usuario_id: req.user.id, local_id: req.user.local_id,
+      tipo_accion: TIPOS_ACCION.EDITAR, entidad: ENTIDADES.PRODUCTOS,
+      entidad_id: id, descripcion: `Producto editado: "${nombre || producto.nombre}"`
+    }).catch(() => {});
     res.status(200).json(producto);
   } catch (error) {
     console.error('Error updating producto:', error);
@@ -61,6 +73,11 @@ const deleteProducto = async (req, res) => {
   try {
     const resultado = await productosService.delete(id, req.user.local_id);
     if (!resultado) return res.status(404).json({ message: 'Producto no encontrado' });
+    historialService.registrar({
+      usuario_id: req.user.id, local_id: req.user.local_id,
+      tipo_accion: TIPOS_ACCION.ELIMINAR, entidad: ENTIDADES.PRODUCTOS,
+      entidad_id: id, descripcion: `Producto eliminado [${id}]`
+    }).catch(() => {});
     res.status(200).json({ message: 'Producto eliminado correctamente' });
   } catch (error) {
     console.error('Error deleting producto:', error);

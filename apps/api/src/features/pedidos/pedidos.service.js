@@ -4,7 +4,7 @@ const { TIPOS_ACCION, ENTIDADES } = require('../../shared/constants/audit');
 
 class PedidosService {
 
-  async createPedido(empleado_id, local_id, items) {
+  async createPedido(empleado_id, local_id, items, usuario_id) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
@@ -41,6 +41,15 @@ class PedidosService {
       }
 
       await client.query('COMMIT');
+
+      historialService.registrar({
+        usuario_id: usuario_id || empleado_id, local_id,
+        tipo_accion: TIPOS_ACCION.CREAR,
+        entidad: ENTIDADES.PEDIDOS,
+        entidad_id: pedido.id,
+        descripcion: `Pedido creado [${pedido.id}]`
+      }).catch(() => {});
+
       return this.getPedidoById(pedido.id);
     } catch (error) { await client.query('ROLLBACK'); throw error; }
     finally { client.release(); }
@@ -160,15 +169,19 @@ class PedidosService {
     return r.rows[0];
   }
 
-  async completarPedido(pedidoId, usuario_id, local_id) {
+  async completarPedido(pedidoId, usuario_id, local_id, pago = {}) {
     const client = await db.pool.connect();
     try {
       await client.query('BEGIN');
 
       const pedidoResult = await client.query(
-        `UPDATE pedidos SET estado = 'completado', completado_at = NOW(), updated_at = NOW()
+        `UPDATE pedidos
+         SET estado = 'completado', completado_at = NOW(), updated_at = NOW(),
+             metodo_pago = $3,
+             monto_efectivo = $4,
+             monto_transferencia = $5
          WHERE id = $1 AND local_id = $2 AND estado != 'completado' RETURNING *`,
-        [pedidoId, local_id]
+        [pedidoId, local_id, pago?.metodo || null, pago?.efectivo || 0, pago?.transferencia || 0]
       );
       if (!pedidoResult.rows[0]) throw new Error('PEDIDO_YA_COMPLETADO');
 
