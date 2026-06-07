@@ -12,9 +12,12 @@ export const analyticsService = {
   },
 
   async getTendencias(periodo = "semana") {
-    const { data } = await api.get("/pedidos/todos", {
-      params: { periodo },
-    });
+    const { data } = await api.get("/pedidos/todos", { params: { periodo } });
+    return data;
+  },
+
+  async getProyecciones() {
+    const { data } = await api.get("/reportes/proyecciones");
     return data;
   },
 };
