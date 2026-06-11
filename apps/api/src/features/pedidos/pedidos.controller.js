@@ -123,6 +123,25 @@ const updateEstado = async (req, res) => {
         message: `Stock insuficiente de insumo: ${insumo}. El pedido NO fue marcado como completado.`
       });
     }
+    // Error del trigger PostgreSQL fn_aplicar_movimiento
+    // Formato: "Stock insuficiente para el insumo {uuid}: disponible X, solicitado Y"
+    if (error.message && error.message.toLowerCase().includes('stock insuficiente')) {
+      const match = error.message.match(/insumo\s+([\w-]+):\s*disponible\s+([\d.]+),\s*solicitado\s+([\d.]+)/i);
+      if (match) {
+        const [, insumoId, disponible, solicitado] = match;
+        try {
+          const db = require('../../shared/database/db');
+          const r = await db.query('SELECT nombre FROM insumos WHERE id = $1', [insumoId]);
+          const nombre = r.rows[0]?.nombre || insumoId;
+          return res.status(409).json({
+            message: `Stock insuficiente de "${nombre}": hay ${disponible} disponible pero se necesitan ${solicitado}. Reabastecé el inventario antes de completar.`
+          });
+        } catch { /* si falla el query, caer al mensaje genérico */ }
+      }
+      return res.status(409).json({
+        message: `Stock insuficiente para completar el pedido. Verificá el inventario antes de continuar.`
+      });
+    }
     console.error('Error updating estado:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }

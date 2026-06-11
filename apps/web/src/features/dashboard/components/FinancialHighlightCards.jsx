@@ -1,12 +1,14 @@
 import { FaPercentage } from "react-icons/fa";
 
 export const FinancialHighlightCards = ({ ingresos, costos }) => {
-  const ganancia = ingresos - costos;
-  const margen = ingresos > 0 ? (ganancia / ingresos) * 100 : 0;
+  const ing = ingresos || 0;
+  const cos = costos || 0;
+  const ganancia = ing - cos;
+  const margen = ing > 0 ? (ganancia / ing) * 100 : 0;
 
   const cards = [
-    { label: "Ingresos", value: `$${(ingresos || 0).toLocaleString()}`, color: "text-emerald-400" },
-    { label: "Costos", value: `$${(costos || 0).toLocaleString()}`, color: "text-red-400" },
+    { label: "Ingresos", value: `$${ing.toLocaleString()}`, color: "text-emerald-400" },
+    { label: "Costos", value: `$${cos.toLocaleString()}`, color: "text-red-400" },
     { label: "Ganancia Neta", value: `$${Math.round(ganancia).toLocaleString()}`, color: ganancia >= 0 ? "text-emerald-400" : "text-red-400" },
     {
       label: "Margen Bruto",

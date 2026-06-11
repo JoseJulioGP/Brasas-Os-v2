@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaTimes, FaUtensils, FaTrash, FaTag } from "react-icons/fa";
+import { FaPlus, FaTimes, FaUtensils, FaTrash, FaTag, FaSync } from "react-icons/fa";
 import { useMenuStore } from "../stores/useMenuStore";
 import { menuService } from "../services/menuService";
+import api from "../../../services/api";
 import useInventoryStore from "../../inventory/stores/useInventoryStore";
 import { MenuFilters } from "./MenuFilters";
 import { MenuTable } from "./MenuTable";
@@ -9,7 +10,7 @@ import { MenuMobileList } from "./MenuMobileList";
 import { MenuFormModal } from "./MenuFormModal";
 import { CategoriasModal } from "./CategoriasModal";
 
-export const MenuPage = () => {
+export const MenuPage = ({ readOnly = false }) => {
   const { items, isLoading, error, fetchAll, create, update, remove, clearError } = useMenuStore();
   const { insumos: allInsumos, fetchInsumos } = useInventoryStore();
 
@@ -20,6 +21,7 @@ export const MenuPage = () => {
   const [categorias, setCategorias] = useState([]);
   const [deleteId, setDeleteId]       = useState(null);
   const [showCategorias, setShowCategorias] = useState(false);
+  const [recalculando, setRecalculando] = useState(false);
 
   useEffect(() => {
     clearError();
@@ -57,6 +59,13 @@ export const MenuPage = () => {
 
   const confirmDelete = () => { remove(deleteId); setDeleteId(null); };
 
+  const handleRecalcular = async () => {
+    setRecalculando(true);
+    try { await api.post("/productos/recalcular-costos"); await fetchAll(); }
+    catch { /* silencioso */ }
+    finally { setRecalculando(false); }
+  };
+
   const handleDuplicate = async (item) => {
     try {
       const full = await menuService.getById(item.id);
@@ -89,16 +98,24 @@ export const MenuPage = () => {
               <p className="text-sm text-white/40 font-body">Carta del local con precios y márgenes</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowCategorias(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white/60 rounded-xl font-medium text-sm hover:bg-white/[0.08] hover:text-white/80 transition-all font-body">
-              <FaTag className="text-xs" /> Categorías
-            </button>
-            <button onClick={openCreate}
-              className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
-              <FaPlus /> Nuevo Producto
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="flex gap-2">
+              <button onClick={handleRecalcular} disabled={recalculando}
+                title="Recalcular costos de producción desde los insumos"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white/60 rounded-xl font-medium text-sm hover:bg-white/[0.08] hover:text-white/80 transition-all font-body disabled:opacity-40">
+                <FaSync className={`text-xs ${recalculando ? "animate-spin" : ""}`} />
+                {recalculando ? "Calculando..." : "Recalcular costos"}
+              </button>
+              <button onClick={() => setShowCategorias(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] text-white/60 rounded-xl font-medium text-sm hover:bg-white/[0.08] hover:text-white/80 transition-all font-body">
+                <FaTag className="text-xs" /> Categorías
+              </button>
+              <button onClick={openCreate}
+                className="flex items-center gap-2 px-5 py-2.5 bg-orange-600 text-white rounded-xl font-semibold text-sm hover:bg-orange-500 transition-all shadow-lg shadow-orange-600/20 font-body">
+                <FaPlus /> Nuevo Producto
+              </button>
+            </div>
+          )}
         </div>
 
         <MenuFilters search={search} onSearchChange={setSearch} categoria={categoria} onCategoriaChange={setCategoria} categorias={categorias} />
@@ -127,13 +144,13 @@ export const MenuPage = () => {
           </div>
         ) : (
           <>
-            <MenuMobileList items={filtered} onEdit={openEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
-            <MenuTable      items={filtered} onEdit={openEdit} onDelete={handleDelete} onDuplicate={handleDuplicate} />
+            <MenuMobileList items={filtered} onEdit={readOnly ? null : openEdit} onDelete={readOnly ? null : handleDelete} onDuplicate={readOnly ? null : handleDuplicate} />
+            <MenuTable      items={filtered} onEdit={readOnly ? null : openEdit} onDelete={readOnly ? null : handleDelete} onDuplicate={readOnly ? null : handleDuplicate} />
           </>
         )}
       </div>
 
-      {deleteId && (
+      {!readOnly && deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setDeleteId(null)} />
           <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-sm shadow-2xl shadow-black/60 p-6 space-y-5">
@@ -160,16 +177,19 @@ export const MenuPage = () => {
         </div>
       )}
 
-      <CategoriasModal
-        isOpen={showCategorias}
-        onClose={() => setShowCategorias(false)}
-        categorias={categorias}
-        onCategoriaCreada={(nueva) => setCategorias(prev => [...prev, nueva].sort((a,b) => a.nombre.localeCompare(b.nombre)))}
-        onCategoriaEliminada={(id) => { setCategorias(prev => prev.filter(c => c.id !== id)); if (categoria === id) setCategoria(""); }}
-      />
-
-      <MenuFormModal isOpen={showModal} editing={editing} isLoading={isLoading}
-        allInsumos={allInsumos} categorias={categorias} onSubmit={handleSubmit} onClose={() => setShowModal(false)} />
+      {!readOnly && (
+        <>
+          <CategoriasModal
+            isOpen={showCategorias}
+            onClose={() => setShowCategorias(false)}
+            categorias={categorias}
+            onCategoriaCreada={(nueva) => setCategorias(prev => [...prev, nueva].sort((a,b) => a.nombre.localeCompare(b.nombre)))}
+            onCategoriaEliminada={(id) => { setCategorias(prev => prev.filter(c => c.id !== id)); if (categoria === id) setCategoria(""); }}
+          />
+          <MenuFormModal isOpen={showModal} editing={editing} isLoading={isLoading}
+            allInsumos={allInsumos} categorias={categorias} onSubmit={handleSubmit} onClose={() => setShowModal(false)} />
+        </>
+      )}
     </div>
   );
 };

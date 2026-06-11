@@ -1,19 +1,68 @@
-import { useState, useMemo } from "react";
-import { FaTimes, FaShoppingCart, FaPlus, FaMinus, FaTrash } from "react-icons/fa";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { FaTimes, FaShoppingCart, FaPlus, FaMinus, FaTrash, FaSearch, FaChevronDown } from "react-icons/fa";
 import { useMenuStore } from "../../menu/stores/useMenuStore";
 
 /* ── Selector de producto inline ── */
 const ProductPicker = ({ value, onChange, usedIds }) => {
   const { items } = useMenuStore();
+  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-
-  const filtered = useMemo(() =>
-    items.filter(i =>
-      i.nombre?.toLowerCase().includes(search.toLowerCase()) && !usedIds.includes(i.id)
-    ), [items, search, usedIds]
-  );
+  const [categoriaActiva, setCategoriaActiva] = useState(null);
+  const ref = useRef(null);
+  const inputRef = useRef(null);
 
   const selected = items.find(i => i.id === value);
+
+  const categorias = useMemo(() => {
+    const cats = [...new Map(
+      items.filter(i => i.categoria).map(i => [i.categoria_id, { id: i.categoria_id, nombre: i.categoria }])
+    ).values()];
+    return cats.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [items]);
+
+  const disponibles = items.filter(i => !usedIds.includes(i.id));
+
+  const filtered = useMemo(() =>
+    disponibles.filter(i => {
+      const matchSearch = !search || i.nombre?.toLowerCase().includes(search.toLowerCase());
+      const matchCat = !categoriaActiva || i.categoria_id === categoriaActiva;
+      return matchSearch && matchCat;
+    }), [disponibles, search, categoriaActiva]
+  );
+
+  const grupos = useMemo(() => {
+    if (search || categoriaActiva) return null;
+    const map = new Map();
+    for (const item of disponibles) {
+      const key = item.categoria || "Sin categoría";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [disponibles, search, categoriaActiva]);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
+  }, [open]);
+
+  const handleSelect = (id) => { onChange(id); setOpen(false); setSearch(""); setCategoriaActiva(null); };
+
+  const renderItem = (item) => (
+    <button key={item.id} type="button"
+      onClick={() => handleSelect(item.id)}
+      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left">
+      <p className="text-sm text-[#f5f0eb]">{item.nombre}</p>
+      <p className="text-xs text-orange-400 font-mono shrink-0 ml-3">
+        ${item.precio_venta?.toLocaleString("es-CO")}
+      </p>
+    </button>
+  );
 
   if (selected) {
     return (
@@ -31,34 +80,61 @@ const ProductPicker = ({ value, onChange, usedIds }) => {
   }
 
   return (
-    <div className="flex-1 relative">
-      <input
-        type="text"
-        placeholder="Buscar plato..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-2.5 text-sm text-[#f5f0eb] placeholder:text-white/20 outline-none focus:border-orange-500/40 transition-all"
-        autoComplete="off"
-      />
-      {search && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-[#111] border border-white/[0.08] rounded-xl shadow-2xl max-h-48 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <p className="p-4 text-xs text-white/30 text-center">Sin resultados</p>
-          ) : (
-            filtered.map(item => (
-              <button key={item.id} type="button"
-                onClick={() => { onChange(item.id); setSearch(""); }}
-                className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
-                <div>
-                  <p className="text-sm text-[#f5f0eb]">{item.nombre}</p>
-                  {item.categoria && <p className="text-[10px] text-white/30">{item.categoria}</p>}
-                </div>
-                <p className="text-xs text-orange-400 font-mono shrink-0">
-                  ${item.precio_venta?.toLocaleString("es-CO")}
-                </p>
+    <div ref={ref} className="flex-1 relative">
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-4 py-2.5 text-sm text-left flex items-center justify-between gap-2 hover:border-white/[0.14] transition-colors focus:outline-none focus:border-orange-500/40">
+        <span className="text-white/20">Seleccionar plato...</span>
+        <FaChevronDown className={`text-white/20 text-xs transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full left-0 mt-1 bg-[#111] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden" style={{ width: "320px" }}>
+          {/* Buscador */}
+          <div className="p-2 border-b border-white/[0.04]">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+              <input ref={inputRef} type="text" placeholder="Buscar plato..." value={search}
+                onChange={e => { setSearch(e.target.value); setCategoriaActiva(null); }}
+                className="w-full bg-white/[0.04] rounded-lg pl-8 pr-3 py-2 text-xs text-[#f5f0eb] placeholder:text-white/20 focus:outline-none" />
+              {search && (
+                <button type="button" onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50">
+                  <FaTimes className="text-[10px]" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Chips de categoría */}
+          {!search && categorias.length > 1 && (
+            <div className="flex gap-1 px-2 py-1.5 border-b border-white/[0.04] overflow-x-auto">
+              <button type="button" onClick={() => setCategoriaActiva(null)}
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${!categoriaActiva ? "bg-orange-500/20 text-orange-400" : "text-white/30 hover:text-white/60 hover:bg-white/[0.04]"}`}>
+                Todos
               </button>
-            ))
+              {categorias.map(cat => (
+                <button type="button" key={cat.id} onClick={() => setCategoriaActiva(categoriaActiva === cat.id ? null : cat.id)}
+                  className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${categoriaActiva === cat.id ? "bg-orange-500/20 text-orange-400" : "text-white/30 hover:text-white/60 hover:bg-white/[0.04]"}`}>
+                  {cat.nombre}
+                </button>
+              ))}
+            </div>
           )}
+
+          {/* Lista */}
+          <div className="overflow-y-auto max-h-[220px]">
+            {grupos ? (
+              grupos.map(([cat, catItems]) => (
+                <div key={cat}>
+                  <p className="px-4 pt-2.5 pb-1 text-[9px] font-semibold tracking-widest uppercase text-white/20">{cat}</p>
+                  {catItems.map(renderItem)}
+                </div>
+              ))
+            ) : filtered.length === 0 ? (
+              <p className="p-4 text-xs text-white/30 text-center">Sin resultados</p>
+            ) : (
+              filtered.map(renderItem)
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -96,7 +172,7 @@ export const OrderCreateModal = ({ isOpen, isLoading, onSubmit, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl shadow-black/60 animate-fade-in-up flex flex-col max-h-[92vh]">
+      <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-4xl shadow-2xl shadow-black/60 animate-fade-in-up flex flex-col max-h-[92vh] min-h-[70vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/[0.06] shrink-0">

@@ -132,4 +132,14 @@ const deleteCategoria = async (req, res) => {
   }
 };
 
-module.exports = { getProductos, getProductoById, createProducto, updateProducto, deleteProducto, getProductosConCostos, getCategorias, createCategoria, deleteCategoria };
+const recalcularCostos = async (req, res) => {
+  try {
+    const actualizados = await productosService.recalcularCostos(req.user.local_id);
+    res.status(200).json({ message: `${actualizados} productos actualizados`, actualizados });
+  } catch (error) {
+    console.error('Error recalculando costos:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getProductos, getProductoById, createProducto, updateProducto, deleteProducto, getProductosConCostos, getCategorias, createCategoria, deleteCategoria, recalcularCostos };

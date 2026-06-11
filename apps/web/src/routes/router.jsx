@@ -146,4 +146,12 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "/empleado/menu",
+    element: (
+      <ProtectedRoute allowedRoles={["EMPLEADO"]}>
+        <MenuPage readOnly />
+      </ProtectedRoute>
+    ),
+  },
 ]);

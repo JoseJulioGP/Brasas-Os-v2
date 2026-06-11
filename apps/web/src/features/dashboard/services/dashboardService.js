@@ -33,7 +33,7 @@ export const fetchFinancialSummary = async (periodo) => {
         params: { fecha_inicio: fechaInicio.toISOString() },
       });
       const completados = (pedidos || []).filter((p) => p.estado === "completado");
-      const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
+      const ingresos = completados.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
       return { ingresos, costos: 0, ganancia: ingresos, margen: 0, utilidad_positiva: ingresos > 0, variacion_utilidad: null };
     } catch {
       return { ingresos: 0, costos: 0, ganancia: 0, margen: 0, utilidad_positiva: false, variacion_utilidad: null };
@@ -52,7 +52,7 @@ export const fetchStats = async (periodo) => {
     const pedidos = pedidosRes.status === "fulfilled" ? (pedidosRes.value.data || []) : [];
     const insumos = insumosRes.status === "fulfilled" ? (insumosRes.value.data || []) : [];
     const completados = pedidos.filter((p) => p.estado === "completado");
-    const ingresos = completados.reduce((s, p) => s + (p.total || 0), 0);
+    const ingresos = completados.reduce((s, p) => s + (parseFloat(p.total) || 0), 0);
     const stockTotal = insumos.reduce((s, i) => s + (parseFloat(i.stock_actual) || 0), 0);
     return {
       pedidos: pedidos.filter((p) => p.estado !== "cancelado").length,

@@ -25,6 +25,8 @@ const ActionHistory = ({ history }) => {
     return fecha.split(' ')[1];
   };
 
+  if (!history || history.length === 0) return null;
+
   return (
     <div className="glass rounded-2xl p-5 animate-fade-in-up stagger-7 opacity-0">
       <h3 className="text-lg font-heading font-bold text-[#f5f0eb] flex items-center gap-2 mb-5">
