@@ -156,6 +156,7 @@ router.get('/',     verifyToken, productosController.getProductos);
 router.get('/:id',  verifyToken, productosController.getProductoById);
 
 // JEFE y ADMIN pueden gestionar el menú
+router.post('/recalcular-costos', verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.recalcularCostos);
 router.post('/',      verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.createProducto);
 router.put('/:id',    verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.updateProducto);
 router.delete('/:id', verifyToken, requireAnyRole('JEFE', 'ADMIN'), productosController.deleteProducto);

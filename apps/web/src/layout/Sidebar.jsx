@@ -69,6 +69,7 @@ const NAV = {
         label: "Mi trabajo",
         items: [
           { path: "/empleado/pedidos", label: "Mis Pedidos", icon: FaShoppingCart },
+          { path: "/empleado/menu",    label: "Menú",        icon: FaUtensils     },
         ],
       },
     ],

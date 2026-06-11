@@ -80,23 +80,24 @@ const InsumoSelector = ({ value, allInsumos, onChange }) => {
 };
 
 export const MenuFormModal = ({ isOpen, editing, isLoading, allInsumos, categorias, onSubmit, onClose }) => {
-  const [form, setForm]       = useState({ nombre: "", precio_venta: "", categoria_id: "" });
+  const [form, setForm]       = useState({ nombre: "", precio_venta: "", costo_produccion: "", categoria_id: "" });
   const [insumos, setInsumos] = useState([]);
   const [error, setError]     = useState("");
 
   useEffect(() => {
     if (editing) {
       setForm({
-        nombre:       editing.nombre             || "",
-        precio_venta: editing.precio_venta?.toString() || "",
-        categoria_id: editing.categoria_id       || "",
+        nombre:            editing.nombre                    || "",
+        precio_venta:      editing.precio_venta?.toString()  || "",
+        costo_produccion:  editing.costo_produccion?.toString() || "",
+        categoria_id:      editing.categoria_id              || "",
       });
       setInsumos((editing.insumos || []).map(i => ({
         insumo_id:          i.insumo_id,
         cantidad_requerida: i.cantidad_requerida,
       })));
     } else {
-      setForm({ nombre: "", precio_venta: "", categoria_id: "" });
+      setForm({ nombre: "", precio_venta: "", costo_produccion: "", categoria_id: "" });
       setInsumos([]);
     }
     setError("");
@@ -113,10 +114,11 @@ export const MenuFormModal = ({ isOpen, editing, isLoading, allInsumos, categori
     }
     setError("");
     onSubmit({
-      nombre:       form.nombre,
-      precio_venta: Number(form.precio_venta),
-      categoria_id: form.categoria_id || null,
-      insumos:      insumosValidos,
+      nombre:            form.nombre,
+      precio_venta:      Number(form.precio_venta),
+      costo_produccion:  Number(form.costo_produccion) || 0,
+      categoria_id:      form.categoria_id || null,
+      insumos:           insumosValidos,
     });
   };
 
@@ -127,9 +129,10 @@ export const MenuFormModal = ({ isOpen, editing, isLoading, allInsumos, categori
   const getUnidad    = (id) => getInsumo(id)?.unidad_medida || "";
   const isUnidad     = (id) => getInsumo(id)?.unidad_medida === "unidad";
 
-  const margenEstimado = form.precio_venta && editing?.costo_produccion
-    ? (Number(form.precio_venta) - editing.costo_produccion).toLocaleString("es-CO")
-    : null;
+  const precio = Number(form.precio_venta) || 0;
+  const costo  = Number(form.costo_produccion) || 0;
+  const margen = precio > 0 && costo > 0 ? precio - costo : null;
+  const margenPct = margen !== null && precio > 0 ? ((margen / precio) * 100).toFixed(1) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
@@ -184,12 +187,21 @@ export const MenuFormModal = ({ isOpen, editing, isLoading, allInsumos, categori
                 </select>
               </Field>
 
-              <Field label="Precio de venta" required
-                hint={margenEstimado ? `Margen est.: $${margenEstimado}` : undefined}>
+              <Field label="Precio de venta" required>
                 <input type="number" min="0" step="0.01" value={form.precio_venta}
                   onChange={e => setForm(p => ({ ...p, precio_venta: e.target.value }))}
                   placeholder="25000" className={inputCls} required />
               </Field>
+
+              {margen !== null && (
+                <div className={`px-3 py-2 rounded-xl border text-xs font-number ${
+                  margen >= 0
+                    ? "bg-emerald-500/8 border-emerald-500/20 text-emerald-400"
+                    : "bg-red-500/8 border-red-500/20 text-red-400"
+                }`}>
+                  Costo estimado: ${costo.toLocaleString("es-CO")} · Margen: {margen >= 0 ? "+" : ""}${margen.toLocaleString("es-CO")} ({margenPct}%)
+                </div>
+              )}
             </div>
 
             {/* Columna derecha — insumos */}

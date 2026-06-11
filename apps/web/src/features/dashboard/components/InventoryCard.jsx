@@ -17,6 +17,8 @@ const InventoryCard = ({ inventory }) => {
 
   const items = Array.isArray(inventory) ? inventory : [];
 
+  if (items.length === 0) return null;
+
   return (
     <div className="glass rounded-2xl p-5 animate-fade-in-up stagger-6 opacity-0">
       <h3 className="text-lg font-heading font-bold text-[#f5f0eb] flex items-center gap-2 mb-5">
@@ -24,13 +26,7 @@ const InventoryCard = ({ inventory }) => {
         Stock de Insumos
       </h3>
 
-      {items.length === 0 ? (
-        <div className="text-center py-10">
-          <FiPackage className="text-4xl text-white/10 mx-auto mb-2" />
-          <p className="text-sm text-white/30 font-body">Sin insumos registrados</p>
-        </div>
-      ) : (
-        <div className="max-h-80 overflow-y-auto space-y-2.5 pr-1">
+      <div className="max-h-80 overflow-y-auto space-y-2.5 pr-1">
           {items.map((item) => {
             const status     = getStockStatus(item);
             const percentage = getStockPercentage(item);
@@ -72,8 +68,7 @@ const InventoryCard = ({ inventory }) => {
               </div>
             );
           })}
-        </div>
-      )}
+      </div>
     </div>
   );
 };

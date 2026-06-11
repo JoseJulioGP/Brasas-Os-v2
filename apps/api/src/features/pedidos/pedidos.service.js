@@ -185,55 +185,8 @@ class PedidosService {
       );
       if (!pedidoResult.rows[0]) throw new Error('PEDIDO_YA_COMPLETADO');
 
-      const itemsResult = await client.query(
-        `SELECT pi.producto_id, pi.cantidad FROM pedido_items pi WHERE pi.pedido_id = $1`,
-        [pedidoId]
-      );
-
-      for (const item of itemsResult.rows) {
-        const insumosResult = await client.query(
-          `SELECT pi.insumo_id, pi.cantidad_requerida FROM producto_insumos pi WHERE pi.producto_id = $1`,
-          [item.producto_id]
-        );
-
-        // Agrupar por insumo_id para evitar doble descuento si hay duplicados en producto_insumos
-        const insumosAgrupados = Object.values(
-          insumosResult.rows.reduce((acc, pi) => {
-            if (acc[pi.insumo_id]) {
-              acc[pi.insumo_id].cantidad_requerida += parseFloat(pi.cantidad_requerida);
-            } else {
-              acc[pi.insumo_id] = { insumo_id: pi.insumo_id, cantidad_requerida: parseFloat(pi.cantidad_requerida) };
-            }
-            return acc;
-          }, {})
-        );
-
-        for (const pi of insumosAgrupados) {
-          const cant = pi.cantidad_requerida * item.cantidad;
-
-          const stock = await client.query(
-            `SELECT stock_actual, nombre FROM insumos
-             WHERE id = $1 AND local_id IS NOT DISTINCT FROM $2`,
-            [pi.insumo_id, local_id]
-          );
-          if (!stock.rows[0]) continue;
-
-          if (parseFloat(stock.rows[0].stock_actual) < cant) {
-            throw new Error(`STOCK_INSUMO_INSUFICIENTE:${stock.rows[0].nombre}`);
-          }
-
-          await client.query(
-            `UPDATE insumos SET stock_actual = stock_actual - $1, updated_at = NOW() WHERE id = $2`,
-            [cant, pi.insumo_id]
-          );
-
-          await client.query(
-            `INSERT INTO stock_movimientos (insumo_id, pedido_id, usuario_id, tipo, cantidad, motivo, created_at)
-             VALUES ($1, $2, $3, 'salida', $4, $5, NOW())`,
-            [pi.insumo_id, pedidoId, usuario_id, cant, `Consumo por pedido [${pedidoId}]`]
-          );
-        }
-      }
+      // El trigger fn_completar_pedido se dispara automáticamente con el UPDATE anterior
+      // y descuenta el stock de insumos. No se hace nada más aquí.
 
       await client.query('COMMIT');
 

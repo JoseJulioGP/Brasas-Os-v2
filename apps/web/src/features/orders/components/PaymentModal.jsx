@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { FaTimes, FaMoneyBillWave, FaExchangeAlt, FaCheckCircle } from "react-icons/fa";
 import { MdPayment } from "react-icons/md";
 
@@ -57,8 +58,8 @@ export const PaymentModal = ({ isOpen, onClose, onConfirm, total = 0 }) => {
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
 
       <div className="relative bg-[#0f0f0e] border border-white/[0.08] rounded-2xl w-full max-w-sm shadow-2xl shadow-black/60 animate-fade-in-up">
@@ -175,6 +176,7 @@ export const PaymentModal = ({ isOpen, onClose, onConfirm, total = 0 }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
